@@ -51,7 +51,6 @@ class ProductListItem extends ConsumerWidget {
                     ? null
                     : () {
                         ref.read(cartProvider.notifier).addProduct(product);
-
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('${product.name} added to cart'),

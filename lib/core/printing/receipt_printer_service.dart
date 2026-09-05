@@ -17,27 +17,21 @@ class ReceiptPrinterPreviewService implements ReceiptPrinterService {
 
     for (final item in sale.items) {
       receipt.writeln(
-        '${item.productId} x${item.quantity} '
-        '${formatMoney(item.totalCents)}',
+        '${item.productId} x${item.quantity} ${_formatMoney(item.totalCents)}',
       );
     }
 
     receipt.writeln('------------------------------');
-    receipt.writeln('Subtotal: ${formatMoney(sale.subtotalCents)}');
-    receipt.writeln('Tax: ${formatMoney(sale.taxCents)}');
-    receipt.writeln('Total: ${formatMoney(sale.totalCents)}');
+    receipt.writeln('Subtotal: ${_formatMoney(sale.subtotalCents)}');
+    receipt.writeln('Tax: ${_formatMoney(sale.taxCents)}');
+    receipt.writeln('Total: ${_formatMoney(sale.totalCents)}');
     receipt.writeln('Payment: ${sale.paymentMethod.name}');
 
-    // Temporary implementation.
-    // Replace this with a Bluetooth, USB, or LAN printer call.
-    assert(() {
-      // ignore: avoid_print
-      print(receipt.toString());
-      return true;
-    }());
+    // ignore: avoid_print
+    print(receipt.toString());
   }
 
-  String formatMoney(int cents) {
-    return '€${(cents / 100).toStringAsFixed(2)}';
+  String _formatMoney(int cents) {
+    return '₹${(cents / 100).toStringAsFixed(2)}';
   }
 }

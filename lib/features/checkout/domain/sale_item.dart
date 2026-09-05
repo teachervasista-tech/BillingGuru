@@ -1,11 +1,4 @@
 class SaleItem {
-  final String id;
-  final String saleId;
-  final String productId;
-  final int quantity;
-  final int unitPriceCents;
-  final int totalCents;
-
   const SaleItem({
     required this.id,
     required this.saleId,
@@ -14,4 +7,11 @@ class SaleItem {
     required this.unitPriceCents,
     required this.totalCents,
   });
+
+  final String id;
+  final String saleId;
+  final String productId;
+  final int quantity;
+  final int unitPriceCents;
+  final int totalCents;
 }

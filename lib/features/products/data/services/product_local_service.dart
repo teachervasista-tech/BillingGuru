@@ -11,20 +11,17 @@ class ProductLocalService {
 
   Future<List<Product>> getAllProducts() async {
     final db = await database.database;
-
     final rows = await db.query(
       'products',
       where: 'is_active = ?',
       whereArgs: [1],
       orderBy: 'name ASC',
     );
-
     return rows.map(ProductMapper.fromMap).toList();
   }
 
   Future<List<Product>> searchProducts(String query) async {
     final db = await database.database;
-
     final searchText = query.trim();
 
     if (searchText.isEmpty) {
@@ -33,10 +30,7 @@ class ProductLocalService {
 
     final rows = await db.query(
       'products',
-      where: '''
-        is_active = ?
-        AND (name LIKE ? OR barcode LIKE ?)
-      ''',
+      where: 'is_active = ? AND (name LIKE ? OR barcode LIKE ?)',
       whereArgs: [1, '%$searchText%', '%$searchText%'],
       orderBy: 'name ASC',
     );
@@ -46,7 +40,6 @@ class ProductLocalService {
 
   Future<Product?> getProductByBarcode(String barcode) async {
     final db = await database.database;
-
     final rows = await db.query(
       'products',
       where: 'barcode = ? AND is_active = ?',
@@ -54,16 +47,12 @@ class ProductLocalService {
       limit: 1,
     );
 
-    if (rows.isEmpty) {
-      return null;
-    }
-
+    if (rows.isEmpty) return null;
     return ProductMapper.fromMap(rows.first);
   }
 
   Future<void> insertProduct(Product product) async {
     final db = await database.database;
-
     await db.insert(
       'products',
       ProductMapper.toMap(product),

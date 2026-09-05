@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../core/database/app_database.dart';
 import '../../../cart/domain/cart_item.dart';
 import '../../../cart/presentation/view_models/cart_view_model.dart';
 import '../../data/repositories/checkout_repository.dart';
 import '../../domain/payment.dart';
 import '../../domain/sale.dart';
 import '../../domain/sale_item.dart';
-import '../../../../core/database/app_database.dart';
 
 final checkoutRepositoryProvider = Provider<CheckoutRepository>((ref) {
   return CheckoutRepository(database: AppDatabase.instance);
@@ -55,7 +55,6 @@ class CheckoutViewModel extends Notifier<CheckoutState> {
 
   Future<void> completeCashSale(WidgetRef ref) async {
     final cart = ref.read(cartProvider);
-
     if (cart.isEmpty) {
       state = state.copyWith(errorMessage: 'The cart is empty.');
       return;
@@ -70,7 +69,6 @@ class CheckoutViewModel extends Notifier<CheckoutState> {
 
   Future<void> completeCardSale(WidgetRef ref) async {
     final cart = ref.read(cartProvider);
-
     if (cart.isEmpty) {
       state = state.copyWith(errorMessage: 'The cart is empty.');
       return;
@@ -109,9 +107,10 @@ class CheckoutViewModel extends Notifier<CheckoutState> {
         (sum, item) => sum + item.totalCents,
       );
 
-      final taxCents = cart.fold<int>(0, (sum, item) {
-        return sum + item.totalCents * item.product.taxRate ~/ 100;
-      });
+      final taxCents = cart.fold<int>(
+        0,
+        (sum, item) => sum + (item.totalCents * item.product.taxRate ~/ 100),
+      );
 
       final sale = Sale(
         id: saleId,
@@ -127,7 +126,6 @@ class CheckoutViewModel extends Notifier<CheckoutState> {
       );
 
       final repository = ref.read(checkoutRepositoryProvider);
-
       await repository.saveSale(sale);
 
       ref.read(cartProvider.notifier).clear();

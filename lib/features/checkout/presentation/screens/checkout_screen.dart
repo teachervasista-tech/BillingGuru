@@ -13,8 +13,8 @@ class CheckoutScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cart = ref.watch(cartProvider);
     final cartViewModel = ref.watch(cartProvider.notifier);
+    final cart = ref.watch(cartProvider);
     final checkoutState = ref.watch(checkoutViewModelProvider);
     final checkoutViewModel = ref.read(checkoutViewModelProvider.notifier);
 

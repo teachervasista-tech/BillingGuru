@@ -11,55 +11,38 @@ final GoRouter appRouter = GoRouter(
   routes: [
     GoRoute(
       path: '/dashboard',
-      builder: (context, state) {
-        return const PlaceholderScreen(
-          title: 'Dashboard',
-          icon: Icons.dashboard,
-        );
-      },
+      builder: (context, state) =>
+          const PlaceholderScreen(title: 'Dashboard', icon: Icons.dashboard),
     ),
     GoRoute(path: '/pos', builder: (context, state) => const PosScreen()),
     GoRoute(
       path: '/products',
-      builder: (context, state) {
-        return const PlaceholderScreen(
-          title: 'Products',
-          icon: Icons.inventory_2,
-        );
-      },
+      builder: (context, state) =>
+          const PlaceholderScreen(title: 'Products', icon: Icons.inventory_2),
     ),
     GoRoute(
       path: '/inventory',
-      builder: (context, state) {
-        return const PlaceholderScreen(
-          title: 'Inventory',
-          icon: Icons.warehouse,
-        );
-      },
+      builder: (context, state) =>
+          const PlaceholderScreen(title: 'Inventory', icon: Icons.warehouse),
     ),
     GoRoute(
       path: '/sales',
-      builder: (context, state) {
-        return const SalesHistoryScreen();
-      },
+      builder: (context, state) => const SalesHistoryScreen(),
     ),
     GoRoute(
       path: '/customers',
-      builder: (context, state) {
-        return const PlaceholderScreen(title: 'Customers', icon: Icons.people);
-      },
+      builder: (context, state) =>
+          const PlaceholderScreen(title: 'Customers', icon: Icons.people),
     ),
     GoRoute(
       path: '/reports',
-      builder: (context, state) {
-        return const PlaceholderScreen(title: 'Reports', icon: Icons.bar_chart);
-      },
+      builder: (context, state) =>
+          const PlaceholderScreen(title: 'Reports', icon: Icons.bar_chart),
     ),
     GoRoute(
       path: '/settings',
-      builder: (context, state) {
-        return const PlaceholderScreen(title: 'Settings', icon: Icons.settings);
-      },
+      builder: (context, state) =>
+          const PlaceholderScreen(title: 'Settings', icon: Icons.settings),
     ),
     GoRoute(
       path: '/checkout',

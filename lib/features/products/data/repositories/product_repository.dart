@@ -6,19 +6,14 @@ class ProductRepository {
 
   final ProductLocalService localService;
 
-  Future<List<Product>> getAllProducts() {
-    return localService.getAllProducts();
-  }
+  Future<List<Product>> getAllProducts() => localService.getAllProducts();
 
-  Future<List<Product>> searchProducts(String query) {
-    return localService.searchProducts(query);
-  }
+  Future<List<Product>> searchProducts(String query) =>
+      localService.searchProducts(query);
 
-  Future<Product?> getProductByBarcode(String barcode) {
-    return localService.getProductByBarcode(barcode);
-  }
+  Future<Product?> getProductByBarcode(String barcode) =>
+      localService.getProductByBarcode(barcode);
 
-  Future<void> addProduct(Product product) {
-    return localService.insertProduct(product);
-  }
+  Future<void> addProduct(Product product) =>
+      localService.insertProduct(product);
 }

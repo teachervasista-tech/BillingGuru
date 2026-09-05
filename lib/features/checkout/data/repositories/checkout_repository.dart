@@ -28,10 +28,7 @@ class CheckoutRepository {
         final availableStock = products.first['stock_quantity'] as int;
 
         if (availableStock < item.quantity) {
-          throw Exception(
-            'Insufficient stock for product: '
-            '${item.productId}',
-          );
+          throw Exception('Insufficient stock for product: ${item.productId}');
         }
       }
 

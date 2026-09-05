@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/cart_item.dart';
 import '../../../products/data/models/product.dart';
+import '../../domain/cart_item.dart';
 
 final cartProvider = NotifierProvider<CartViewModel, List<CartItem>>(
   CartViewModel.new,
@@ -23,59 +23,42 @@ class CartViewModel extends Notifier<List<CartItem>> {
       return;
     }
 
-    final updatedItems = [...state];
-    final existingItem = updatedItems[existingIndex];
+    final items = [...state];
+    final existingItem = items[existingIndex];
 
-    if (existingItem.quantity >= product.stockQuantity) {
-      return;
-    }
+    if (existingItem.quantity >= product.stockQuantity) return;
 
-    updatedItems[existingIndex] = existingItem.copyWith(
+    items[existingIndex] = existingItem.copyWith(
       quantity: existingItem.quantity + 1,
     );
-
-    state = updatedItems;
+    state = items;
   }
 
   void increaseQuantity(String productId) {
     final index = state.indexWhere((item) => item.product.id == productId);
-
-    if (index == -1) {
-      return;
-    }
+    if (index == -1) return;
 
     final item = state[index];
+    if (item.quantity >= item.product.stockQuantity) return;
 
-    if (item.quantity >= item.product.stockQuantity) {
-      return;
-    }
-
-    final updatedItems = [...state];
-
-    updatedItems[index] = item.copyWith(quantity: item.quantity + 1);
-
-    state = updatedItems;
+    final items = [...state];
+    items[index] = item.copyWith(quantity: item.quantity + 1);
+    state = items;
   }
 
   void decreaseQuantity(String productId) {
     final index = state.indexWhere((item) => item.product.id == productId);
-
-    if (index == -1) {
-      return;
-    }
+    if (index == -1) return;
 
     final item = state[index];
-
     if (item.quantity <= 1) {
       removeProduct(productId);
       return;
     }
 
-    final updatedItems = [...state];
-
-    updatedItems[index] = item.copyWith(quantity: item.quantity - 1);
-
-    state = updatedItems;
+    final items = [...state];
+    items[index] = item.copyWith(quantity: item.quantity - 1);
+    state = items;
   }
 
   void removeProduct(String productId) {
@@ -86,21 +69,15 @@ class CartViewModel extends Notifier<List<CartItem>> {
     state = const [];
   }
 
-  int get itemCount {
-    return state.fold(0, (total, item) => total + item.quantity);
-  }
+  int get itemCount => state.fold(0, (total, item) => total + item.quantity);
 
-  int get subtotalCents {
-    return state.fold(0, (total, item) => total + item.totalCents);
-  }
+  int get subtotalCents =>
+      state.fold(0, (total, item) => total + item.totalCents);
 
-  int get taxCents {
-    return state.fold(0, (total, item) {
-      return total + item.totalCents * item.product.taxRate ~/ 100;
-    });
-  }
+  int get taxCents => state.fold(
+    0,
+    (total, item) => total + (item.totalCents * item.product.taxRate ~/ 100),
+  );
 
-  int get totalCents {
-    return subtotalCents + taxCents;
-  }
+  int get totalCents => subtotalCents + taxCents;
 }

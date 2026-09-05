@@ -2,18 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app.dart';
-
 import 'core/database/database_initializer.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  //await AppDatabase.instance.deleteDatabaseForDevelopment();
-
   await initializeDatabase();
 
-  runApp(const ProviderScope(child: BillingGuru()));
+  runApp(ProviderScope(child: BillingGuru()));
 }
-
 /*class BillingGuru extends StatelessWidget {
   const BillingGuru({super.key});
 

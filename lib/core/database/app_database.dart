@@ -9,10 +9,7 @@ class AppDatabase {
   static Database? _database;
 
   Future<Database> get database async {
-    if (_database != null) {
-      return _database!;
-    }
-
+    if (_database != null) return _database!;
     _database = await _openDatabase();
     return _database!;
   }
@@ -32,18 +29,6 @@ class AppDatabase {
         await _insertDemoProducts(db);
       },
     );
-  }
-
-  Future<void> deleteDatabaseForDevelopment() async {
-    final databaseDirectory = await getDatabasesPath();
-    final databasePath = join(databaseDirectory, 'pos_billing.db');
-
-    if (_database != null) {
-      await _database!.close();
-      _database = null;
-    }
-
-    await deleteDatabase(databasePath);
   }
 
   Future<void> _createTables(Database db) async {
@@ -81,11 +66,8 @@ class AppDatabase {
         quantity INTEGER NOT NULL,
         unit_price_cents INTEGER NOT NULL,
         total_cents INTEGER NOT NULL,
-        FOREIGN KEY (sale_id)
-          REFERENCES sales (id)
-          ON DELETE CASCADE,
-        FOREIGN KEY (product_id)
-          REFERENCES products (id)
+        FOREIGN KEY (sale_id) REFERENCES sales (id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products (id)
       )
     ''');
 
@@ -97,8 +79,7 @@ class AppDatabase {
         quantity INTEGER NOT NULL,
         reference_id TEXT,
         created_at TEXT NOT NULL,
-        FOREIGN KEY (product_id)
-          REFERENCES products (id)
+        FOREIGN KEY (product_id) REFERENCES products (id)
       )
     ''');
   }
@@ -150,5 +131,17 @@ class AppDatabase {
         conflictAlgorithm: ConflictAlgorithm.ignore,
       );
     }
+  }
+
+  Future<void> deleteDatabaseForDevelopment() async {
+    final databaseDirectory = await getDatabasesPath();
+    final databasePath = join(databaseDirectory, 'pos_billing.db');
+
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
+
+    await deleteDatabase(databasePath);
   }
 }
