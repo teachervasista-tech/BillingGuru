@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../../cart/presentation/view_models/cart_view_model.dart';
 import '../../../../app/widgets/copyright_banner.dart';
+import '../../../cart/presentation/view_models/cart_view_model.dart';
 import '../view_models/checkout_view_model.dart';
 
 class CheckoutScreen extends ConsumerWidget {
@@ -12,32 +13,48 @@ class CheckoutScreen extends ConsumerWidget {
     return '€${(cents / 100).toStringAsFixed(2)}';
   }
 
+  Future<void> _completeCashSale(BuildContext context, WidgetRef ref) async {
+    final viewModel = ref.read(checkoutViewModelProvider.notifier);
+
+    await viewModel.completeCashSale(ref);
+
+    if (!context.mounted) {
+      return;
+    }
+
+    final checkoutState = ref.read(checkoutViewModelProvider);
+
+    if (checkoutState.isCompleted) {
+      ref.read(checkoutViewModelProvider.notifier).reset();
+      context.go('/pos');
+    }
+  }
+
+  Future<void> _completeCardSale(BuildContext context, WidgetRef ref) async {
+    final viewModel = ref.read(checkoutViewModelProvider.notifier);
+
+    await viewModel.completeCardSale(ref);
+
+    if (!context.mounted) {
+      return;
+    }
+
+    final checkoutState = ref.read(checkoutViewModelProvider);
+
+    if (checkoutState.isCompleted) {
+      ref.read(checkoutViewModelProvider.notifier).reset();
+      context.go('/pos');
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cartViewModel = ref.watch(cartProvider.notifier);
     final cart = ref.watch(cartProvider);
+    final cartViewModel = ref.read(cartProvider.notifier);
     final checkoutState = ref.watch(checkoutViewModelProvider);
-    final checkoutViewModel = ref.read(checkoutViewModelProvider.notifier);
-
-    ref.listen<CheckoutState>(checkoutViewModelProvider, (previous, next) {
-      if (next.isCompleted && !next.isSaving) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sale completed successfully')),
-        );
-      }
-
-      if (next.errorMessage != null &&
-          next.errorMessage != previous?.errorMessage) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(next.errorMessage!)));
-      }
-    });
 
     return Scaffold(
-      appBar: AppBar(
-        leading: const Icon(Icons.payment),
-        title: const Text('Checkout'),
-      ),
+      appBar: AppBar(title: const Text('Checkout')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -45,7 +62,7 @@ class CheckoutScreen extends ConsumerWidget {
           children: [
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
                     const Icon(Icons.receipt_long, size: 64),
@@ -66,7 +83,7 @@ class CheckoutScreen extends ConsumerWidget {
               onPressed: cart.isEmpty || checkoutState.isSaving
                   ? null
                   : () {
-                      checkoutViewModel.completeCashSale(ref);
+                      _completeCashSale(context, ref);
                     },
               icon: checkoutState.isSaving
                   ? const SizedBox(
@@ -82,11 +99,19 @@ class CheckoutScreen extends ConsumerWidget {
               onPressed: cart.isEmpty || checkoutState.isSaving
                   ? null
                   : () {
-                      checkoutViewModel.completeCardSale(ref);
+                      _completeCardSale(context, ref);
                     },
               icon: const Icon(Icons.credit_card),
               label: const Text('Pay by card'),
             ),
+            if (checkoutState.errorMessage != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                checkoutState.errorMessage!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.red),
+              ),
+            ],
           ],
         ),
       ),
