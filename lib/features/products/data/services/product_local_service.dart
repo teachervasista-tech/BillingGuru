@@ -84,6 +84,20 @@ class ProductLocalService {
   Future<void> insertProduct(Product product) async {
     final db = await database.database;
 
+    final existingProduct = await db.query(
+      'products',
+      columns: ['id'],
+      where: 'barcode = ?',
+      whereArgs: [product.barcode],
+      limit: 1,
+    );
+
+    if (existingProduct.isNotEmpty) {
+      throw Exception(
+        'A product with barcode ${product.barcode} already exists.',
+      );
+    }
+
     await db.insert(
       'products',
       ProductMapper.toMap(product),

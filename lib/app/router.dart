@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../features/cart/presentation/screens/pos_screen.dart';
 import '../features/checkout/presentation/screens/checkout_screen.dart';
 import '../features/sales/presentation/screens/sales_history_screen.dart';
+import '../features/products/presentation/screens/products_screen.dart';
 import 'screens/placeholder_screen.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -17,8 +18,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(path: '/pos', builder: (context, state) => const PosScreen()),
     GoRoute(
       path: '/products',
-      builder: (context, state) =>
-          const PlaceholderScreen(title: 'Products', icon: Icons.inventory_2),
+      builder: (context, state) => const ProductsScreen(),
     ),
     GoRoute(
       path: '/inventory',

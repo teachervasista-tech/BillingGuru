@@ -1,0 +1,224 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../view_models/product_view_model.dart';
+
+class ProductFormDialog extends ConsumerStatefulWidget {
+  const ProductFormDialog({super.key});
+
+  @override
+  ConsumerState<ProductFormDialog> createState() {
+    return _ProductFormDialogState();
+  }
+}
+
+class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
+  final _formKey = GlobalKey<FormState>();
+
+  final _barcodeController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _priceController = TextEditingController();
+  final _taxController = TextEditingController(text: '19');
+  final _stockController = TextEditingController();
+
+  bool _isSaving = false;
+
+  @override
+  void dispose() {
+    _barcodeController.dispose();
+    _nameController.dispose();
+    _priceController.dispose();
+    _taxController.dispose();
+    _stockController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveProduct() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    final priceCents = _parsePriceToCents(_priceController.text);
+
+    final taxRate = int.parse(_taxController.text.trim());
+    final stockQuantity = int.parse(_stockController.text.trim());
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    final success = await ref
+        .read(productViewModelProvider.notifier)
+        .addProduct(
+          barcode: _barcodeController.text,
+          name: _nameController.text,
+          priceCents: priceCents,
+          taxRate: taxRate,
+          stockQuantity: stockQuantity,
+        );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isSaving = false;
+    });
+
+    if (success) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+
+    final error = ref.read(productViewModelProvider).error;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(error?.toString() ?? 'Unable to add product.')),
+    );
+  }
+
+  int _parsePriceToCents(String value) {
+    final normalized = value.trim().replaceAll(',', '.');
+    final price = double.parse(normalized);
+    return (price * 100).round();
+  }
+
+  String? _requiredValidator(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'This field is required.';
+    }
+
+    return null;
+  }
+
+  String? _positiveIntegerValidator(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'This field is required.';
+    }
+
+    final parsed = int.tryParse(value.trim());
+
+    if (parsed == null || parsed < 0) {
+      return 'Enter a valid non-negative number.';
+    }
+
+    return null;
+  }
+
+  String? _priceValidator(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Price is required.';
+    }
+
+    final normalized = value.trim().replaceAll(',', '.');
+    final parsed = double.tryParse(normalized);
+
+    if (parsed == null || parsed < 0) {
+      return 'Enter a valid price.';
+    }
+
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add product'),
+      content: SizedBox(
+        width: 450,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _nameController,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Product name',
+                    prefixIcon: Icon(Icons.label_outline),
+                  ),
+                  validator: _requiredValidator,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _barcodeController,
+                  decoration: const InputDecoration(
+                    labelText: 'Barcode',
+                    prefixIcon: Icon(Icons.qr_code),
+                  ),
+                  validator: _requiredValidator,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _priceController,
+                  decoration: const InputDecoration(
+                    labelText: 'Price',
+                    hintText: 'Example: 2.99',
+                    prefixIcon: Icon(Icons.euro),
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  validator: _priceValidator,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _taxController,
+                  decoration: const InputDecoration(
+                    labelText: 'Tax rate (%)',
+                    prefixIcon: Icon(Icons.percent),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: _positiveIntegerValidator,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _stockController,
+                  decoration: const InputDecoration(
+                    labelText: 'Stock quantity',
+                    prefixIcon: Icon(Icons.inventory_2_outlined),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: _positiveIntegerValidator,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) {
+                    if (!_isSaving) {
+                      _saveProduct();
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSaving
+              ? null
+              : () {
+                  Navigator.of(context).pop(false);
+                },
+          child: const Text('Cancel'),
+        ),
+        FilledButton.icon(
+          onPressed: _isSaving ? null : _saveProduct,
+          icon: _isSaving
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.save),
+          label: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}

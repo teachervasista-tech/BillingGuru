@@ -1,3 +1,4 @@
+//import 'package:billing_guru/core/database/app_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,10 +7,11 @@ import 'core/database/database_initializer.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeDatabase();
 
   // Use this once only if the schema is old.
-  // await AppDatabase.instance.deleteDatabaseForDevelopment();
+  //await AppDatabase.instance.deleteDatabaseForDevelopment();
+
+  await initializeDatabase();
 
   runApp(ProviderScope(child: BillingGuru()));
 }

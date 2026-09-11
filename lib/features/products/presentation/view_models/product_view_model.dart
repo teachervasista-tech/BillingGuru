@@ -64,4 +64,37 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
   Future<void> clearSearch() {
     return search('');
   }
+
+  Future<bool> addProduct({
+    required String barcode,
+    required String name,
+    required int priceCents,
+    required int taxRate,
+    required int stockQuantity,
+  }) async {
+    final repository = ref.read(productRepositoryProvider);
+
+    final product = Product(
+      id: 'p-${DateTime.now().microsecondsSinceEpoch}',
+      barcode: barcode.trim(),
+      name: name.trim(),
+      priceCents: priceCents,
+      taxRate: taxRate,
+      stockQuantity: stockQuantity,
+    );
+
+    state = const AsyncLoading();
+
+    final result = await AsyncValue.guard(() async {
+      await repository.addProduct(product);
+
+      final products = await repository.getAllProducts();
+
+      return ProductState(products: products);
+    });
+
+    state = result;
+
+    return result.hasValue;
+  }
 }
