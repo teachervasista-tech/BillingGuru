@@ -33,17 +33,35 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
   Future<ProductState> build() async {
     final repository = ref.read(productRepositoryProvider);
     final products = await repository.getAllProducts();
+
     return ProductState(products: products);
+  }
+
+  Future<void> loadProducts() async {
+    final repository = ref.read(productRepositoryProvider);
+
+    state = const AsyncLoading();
+
+    state = await AsyncValue.guard(() async {
+      final products = await repository.getAllProducts();
+
+      return ProductState(products: products);
+    });
   }
 
   Future<void> search(String value) async {
     final repository = ref.read(productRepositoryProvider);
+
     state = const AsyncLoading();
+
     state = await AsyncValue.guard(() async {
       final products = await repository.searchProducts(value);
+
       return ProductState(products: products, searchText: value);
     });
   }
 
-  Future<void> clearSearch() => search('');
+  Future<void> clearSearch() {
+    return search('');
+  }
 }

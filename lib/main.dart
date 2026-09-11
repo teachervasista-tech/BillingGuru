@@ -8,6 +8,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDatabase();
 
+  // Use this once only if the schema is old.
+  // await AppDatabase.instance.deleteDatabaseForDevelopment();
+
   runApp(ProviderScope(child: BillingGuru()));
 }
 /*class BillingGuru extends StatelessWidget {

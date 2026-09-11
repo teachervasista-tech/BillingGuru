@@ -37,23 +37,61 @@ class ProductSearchField extends ConsumerWidget {
         Expanded(
           child: productsAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stackTrace) => Center(
-              child: Text(
-                'Unable to load products:\n$error',
-                textAlign: TextAlign.center,
-              ),
-            ),
+            error: (error, stackTrace) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Unable to load products',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text('$error', textAlign: TextAlign.center),
+                      const SizedBox(height: 16),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          ref
+                              .read(productViewModelProvider.notifier)
+                              .loadProducts();
+                        },
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
             data: (productState) {
               if (productState.products.isEmpty) {
                 return const Center(child: Text('No products found'));
               }
 
-              return ListView.builder(
-                padding: const EdgeInsets.only(left: 8, right: 8, bottom: 16),
-                itemCount: productState.products.length,
-                itemBuilder: (context, index) {
-                  return ProductListItem(product: productState.products[index]);
+              return RefreshIndicator(
+                onRefresh: () {
+                  return ref
+                      .read(productViewModelProvider.notifier)
+                      .loadProducts();
                 },
+                child: ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(left: 8, right: 8, bottom: 16),
+                  itemCount: productState.products.length,
+                  itemBuilder: (context, index) {
+                    return ProductListItem(
+                      product: productState.products[index],
+                    );
+                  },
+                ),
               );
             },
           ),

@@ -30,39 +30,45 @@ class ProductListItem extends ConsumerWidget {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
-          'Barcode: ${product.barcode}\nStock: ${product.stockQuantity}',
+          'Barcode: ${product.barcode}\n'
+          'Stock: ${product.stockQuantity}',
         ),
         isThreeLine: true,
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              formatMoney(product.priceCents),
-              style: TextStyle(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.bold,
+        trailing: SizedBox(
+          width: 125,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                formatMoney(product.priceCents),
+                style: TextStyle(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            SizedBox(
-              height: 32,
-              child: FilledButton.icon(
-                onPressed: isOutOfStock
-                    ? null
-                    : () {
-                        ref.read(cartProvider.notifier).addProduct(product);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('${product.name} added to cart'),
-                            duration: const Duration(seconds: 1),
-                          ),
-                        );
-                      },
-                icon: const Icon(Icons.add_shopping_cart, size: 16),
-                label: const Text('Add'),
+              const SizedBox(height: 4),
+              SizedBox(
+                height: 32,
+                child: FilledButton.icon(
+                  onPressed: isOutOfStock
+                      ? null
+                      : () {
+                          ref.read(cartProvider.notifier).addProduct(product);
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('${product.name} added to cart'),
+                              duration: const Duration(seconds: 1),
+                            ),
+                          );
+                        },
+                  icon: const Icon(Icons.add_shopping_cart, size: 16),
+                  label: const Text('Add'),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
