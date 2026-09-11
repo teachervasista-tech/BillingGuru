@@ -5,6 +5,7 @@ import '../features/cart/presentation/screens/pos_screen.dart';
 import '../features/checkout/presentation/screens/checkout_screen.dart';
 import '../features/sales/presentation/screens/sales_history_screen.dart';
 import '../features/products/presentation/screens/products_screen.dart';
+import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 
 import 'screens/placeholder_screen.dart';
 
@@ -13,8 +14,9 @@ final GoRouter appRouter = GoRouter(
   routes: [
     GoRoute(
       path: '/dashboard',
-      builder: (context, state) =>
-          const PlaceholderScreen(title: 'Dashboard', icon: Icons.dashboard),
+      builder: (context, state) {
+        return const DashboardScreen();
+      },
     ),
     GoRoute(path: '/pos', builder: (context, state) => const PosScreen()),
     GoRoute(

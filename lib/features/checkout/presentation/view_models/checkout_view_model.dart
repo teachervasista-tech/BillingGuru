@@ -5,6 +5,7 @@ import '../../../../core/database/app_database.dart';
 import '../../../cart/domain/cart_item.dart';
 import '../../../cart/presentation/view_models/cart_view_model.dart';
 import '../../../sales/presentation/view_models/sales_view_model.dart';
+import '../../../dashboard/presentation/view_models/dashboard_view_model.dart';
 import '../../data/repositories/checkout_repository.dart';
 import '../../domain/payment.dart';
 import '../../domain/sale.dart';
@@ -129,6 +130,7 @@ class CheckoutViewModel extends Notifier<CheckoutState> {
       final repository = ref.read(checkoutRepositoryProvider);
       await repository.saveSale(sale);
 
+      ref.invalidate(dashboardViewModelProvider);
       ref.invalidate(salesViewModelProvider);
 
       ref.read(cartProvider.notifier).clear();
