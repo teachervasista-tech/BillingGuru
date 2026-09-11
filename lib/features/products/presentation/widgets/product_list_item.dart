@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../cart/presentation/view_models/cart_view_model.dart';
 import '../../data/models/product.dart';
+import '../view_models/product_view_model.dart';
+import 'confirm_product_deactivation_dialog.dart';
 //import '../view_models/product_view_model.dart';
 import 'product_form_dialog.dart';
 
@@ -11,10 +13,12 @@ class ProductListItem extends ConsumerWidget {
     super.key,
     required this.product,
     this.showAddToCart = true,
+    this.showManagementActions = true,
   });
 
   final Product product;
   final bool showAddToCart;
+  final bool showManagementActions;
 
   String formatMoney(int cents) {
     return '€${(cents / 100).toStringAsFixed(2)}';
@@ -67,13 +71,23 @@ class ProductListItem extends ConsumerWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            IconButton(
-              tooltip: 'Edit product',
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () {
-                _editProduct(context);
-              },
-            ),
+            if (showManagementActions)
+              IconButton(
+                tooltip: 'Edit product',
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: () {
+                  _editProduct(context);
+                },
+              ),
+            if (showManagementActions)
+              IconButton(
+                tooltip: 'Deactivate product',
+                icon: const Icon(Icons.delete_outline),
+                color: Colors.red,
+                onPressed: () {
+                  _deactivateProduct(context, ref);
+                },
+              ),
             if (showAddToCart)
               FilledButton.icon(
                 onPressed: isOutOfStock
@@ -95,5 +109,48 @@ class ProductListItem extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _deactivateProduct(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showProductDeactivationDialog(
+      context,
+      productName: product.name,
+    );
+
+    if (!confirmed || !context.mounted) {
+      return;
+    }
+
+    final success = await ref
+        .read(productViewModelProvider.notifier)
+        .deactivateProduct(product.id);
+
+    if (!context.mounted) {
+      return;
+    }
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${product.name} was deactivated'),
+          action: SnackBarAction(
+            label: 'UNDO',
+            onPressed: () {
+              ref
+                  .read(productViewModelProvider.notifier)
+                  .activateProduct(product.id);
+            },
+          ),
+        ),
+      );
+    } else {
+      final error = ref.read(productViewModelProvider).error;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error?.toString() ?? 'Unable to deactivate product.'),
+        ),
+      );
+    }
   }
 }

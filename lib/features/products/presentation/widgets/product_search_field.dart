@@ -90,6 +90,7 @@ class ProductSearchField extends ConsumerWidget {
                     return ProductListItem(
                       product: productState.products[index],
                       showAddToCart: true,
+                      showManagementActions: false,
                     );
                   },
                 ),

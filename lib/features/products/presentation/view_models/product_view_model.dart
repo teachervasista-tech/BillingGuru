@@ -130,4 +130,40 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
 
     return result.hasValue;
   }
+
+  Future<bool> deactivateProduct(String productId) async {
+    final repository = ref.read(productRepositoryProvider);
+
+    state = const AsyncLoading();
+
+    final result = await AsyncValue.guard(() async {
+      await repository.deactivateProduct(productId);
+
+      final products = await repository.getAllProducts();
+
+      return ProductState(products: products);
+    });
+
+    state = result;
+
+    return result.hasValue;
+  }
+
+  Future<bool> activateProduct(String productId) async {
+    final repository = ref.read(productRepositoryProvider);
+
+    state = const AsyncLoading();
+
+    final result = await AsyncValue.guard(() async {
+      await repository.activateProduct(productId);
+
+      final products = await repository.getAllProducts();
+
+      return ProductState(products: products);
+    });
+
+    state = result;
+
+    return result.hasValue;
+  }
 }

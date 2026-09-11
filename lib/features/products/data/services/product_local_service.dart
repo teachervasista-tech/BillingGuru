@@ -133,4 +133,34 @@ class ProductLocalService {
       throw Exception('Product ${product.id} was not found.');
     }
   }
+
+  Future<void> deactivateProduct(String productId) async {
+    final db = await database.database;
+
+    final updatedRows = await db.update(
+      'products',
+      {'is_active': 0},
+      where: 'id = ?',
+      whereArgs: [productId],
+    );
+
+    if (updatedRows == 0) {
+      throw Exception('Product $productId was not found.');
+    }
+  }
+
+  Future<void> activateProduct(String productId) async {
+    final db = await database.database;
+
+    final updatedRows = await db.update(
+      'products',
+      {'is_active': 1},
+      where: 'id = ?',
+      whereArgs: [productId],
+    );
+
+    if (updatedRows == 0) {
+      throw Exception('Product $productId was not found.');
+    }
+  }
 }

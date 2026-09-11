@@ -29,4 +29,12 @@ class ProductRepository {
   Future<void> updateProduct(Product product) {
     return localService.updateProduct(product);
   }
+
+  Future<void> deactivateProduct(String productId) {
+    return localService.deactivateProduct(productId);
+  }
+
+  Future<void> activateProduct(String productId) {
+    return localService.activateProduct(productId);
+  }
 }

@@ -113,6 +113,8 @@ class ProductsScreen extends ConsumerWidget {
                           itemBuilder: (context, index) {
                             return ProductListItem(
                               product: productState.products[index],
+                              showAddToCart: false,
+                              showManagementActions: true,
                             );
                           },
                         );
