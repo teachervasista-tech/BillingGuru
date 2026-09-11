@@ -6,6 +6,7 @@ import '../features/checkout/presentation/screens/checkout_screen.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/products/presentation/screens/products_screen.dart';
 import '../features/sales/presentation/screens/sales_history_screen.dart';
+import '../features/inventory/presentation/screens/inventory_screen.dart';
 import 'screens/placeholder_screen.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -32,10 +33,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/inventory',
       builder: (context, state) {
-        return const PlaceholderScreen(
-          title: 'Inventory',
-          icon: Icons.warehouse,
-        );
+        return const InventoryScreen();
       },
     ),
     GoRoute(
