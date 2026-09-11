@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/widgets/side_navigation_rail.dart';
+import '../../../../app/widgets/copyright_banner.dart';
 import '../../../products/presentation/widgets/product_search_field.dart';
 import '../../../products/presentation/view_models/product_view_model.dart';
 import '../../domain/cart_item.dart';
@@ -69,6 +70,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
           ),
         ],
       ),
+      bottomNavigationBar: const CopyrightBanner(),
     );
   }
 }

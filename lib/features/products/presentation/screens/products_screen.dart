@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/widgets/side_navigation_rail.dart';
+import '../../../../app/widgets/copyright_banner.dart';
 import '../view_models/product_view_model.dart';
 import '../widgets/product_form_dialog.dart';
 import '../widgets/product_list_item.dart';
@@ -127,6 +128,7 @@ class ProductsScreen extends ConsumerWidget {
           ),
         ],
       ),
+      bottomNavigationBar: const CopyrightBanner(),
     );
   }
 

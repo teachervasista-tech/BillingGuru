@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../cart/presentation/view_models/cart_view_model.dart';
+import '../../../../app/widgets/copyright_banner.dart';
 import '../view_models/checkout_view_model.dart';
 
 class CheckoutScreen extends ConsumerWidget {
@@ -89,6 +90,7 @@ class CheckoutScreen extends ConsumerWidget {
           ],
         ),
       ),
+      bottomNavigationBar: const CopyrightBanner(),
     );
   }
 }

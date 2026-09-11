@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../app/widgets/side_navigation_rail.dart';
 import '../../data/models/dashboard_summary.dart';
 import '../view_models/dashboard_view_model.dart';
+import '../../../../app/widgets/copyright_banner.dart';
+import '../../../../app/widgets/side_navigation_rail.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -37,7 +38,9 @@ class DashboardScreen extends ConsumerWidget {
           const VerticalDivider(width: 1, thickness: 1),
           Expanded(
             child: dashboardAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () {
+                return const Center(child: CircularProgressIndicator());
+              },
               error: (error, stackTrace) {
                 return _DashboardError(
                   error: error,
@@ -62,6 +65,7 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
+      bottomNavigationBar: const CopyrightBanner(),
     );
   }
 

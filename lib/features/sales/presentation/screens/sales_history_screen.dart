@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/widgets/side_navigation_rail.dart';
+import '../../../../app/widgets/copyright_banner.dart';
 import '../../data/models/sale_summary.dart';
 import '../view_models/sales_view_model.dart';
 
@@ -139,6 +140,7 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
           ),
         ],
       ),
+      bottomNavigationBar: const CopyrightBanner(),
     );
   }
 

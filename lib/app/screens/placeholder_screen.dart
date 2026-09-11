@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/copyright_banner.dart';
+
 class PlaceholderScreen extends StatelessWidget {
   const PlaceholderScreen({super.key, required this.title, required this.icon});
 
@@ -20,6 +22,7 @@ class PlaceholderScreen extends StatelessWidget {
           ],
         ),
       ),
+      bottomNavigationBar: const CopyrightBanner(),
     );
   }
 }
