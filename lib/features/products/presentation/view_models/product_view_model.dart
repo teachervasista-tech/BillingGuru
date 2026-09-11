@@ -97,4 +97,37 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
 
     return result.hasValue;
   }
+
+  Future<bool> updateProduct({
+    required Product product,
+    required String barcode,
+    required String name,
+    required int priceCents,
+    required int taxRate,
+    required int stockQuantity,
+  }) async {
+    final repository = ref.read(productRepositoryProvider);
+
+    final updatedProduct = product.copyWith(
+      barcode: barcode.trim(),
+      name: name.trim(),
+      priceCents: priceCents,
+      taxRate: taxRate,
+      stockQuantity: stockQuantity,
+    );
+
+    state = const AsyncLoading();
+
+    final result = await AsyncValue.guard(() async {
+      await repository.updateProduct(updatedProduct);
+
+      final products = await repository.getAllProducts();
+
+      return ProductState(products: products);
+    });
+
+    state = result;
+
+    return result.hasValue;
+  }
 }

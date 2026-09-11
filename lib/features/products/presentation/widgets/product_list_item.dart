@@ -3,14 +3,36 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../cart/presentation/view_models/cart_view_model.dart';
 import '../../data/models/product.dart';
+//import '../view_models/product_view_model.dart';
+import 'product_form_dialog.dart';
 
 class ProductListItem extends ConsumerWidget {
-  const ProductListItem({super.key, required this.product});
+  const ProductListItem({
+    super.key,
+    required this.product,
+    this.showAddToCart = true,
+  });
 
   final Product product;
+  final bool showAddToCart;
 
   String formatMoney(int cents) {
     return '€${(cents / 100).toStringAsFixed(2)}';
+  }
+
+  Future<void> _editProduct(BuildContext context) async {
+    final updated = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return ProductFormDialog(product: product);
+      },
+    );
+
+    if (updated == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Product updated successfully')),
+      );
+    }
   }
 
   @override
@@ -34,41 +56,42 @@ class ProductListItem extends ConsumerWidget {
           'Stock: ${product.stockQuantity}',
         ),
         isThreeLine: true,
-        trailing: SizedBox(
-          width: 125,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                formatMoney(product.priceCents),
-                style: TextStyle(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+        trailing: Wrap(
+          spacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              formatMoney(product.priceCents),
+              style: TextStyle(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 4),
-              SizedBox(
-                height: 32,
-                child: FilledButton.icon(
-                  onPressed: isOutOfStock
-                      ? null
-                      : () {
-                          ref.read(cartProvider.notifier).addProduct(product);
+            ),
+            IconButton(
+              tooltip: 'Edit product',
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () {
+                _editProduct(context);
+              },
+            ),
+            if (showAddToCart)
+              FilledButton.icon(
+                onPressed: isOutOfStock
+                    ? null
+                    : () {
+                        ref.read(cartProvider.notifier).addProduct(product);
 
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('${product.name} added to cart'),
-                              duration: const Duration(seconds: 1),
-                            ),
-                          );
-                        },
-                  icon: const Icon(Icons.add_shopping_cart, size: 16),
-                  label: const Text('Add'),
-                ),
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${product.name} added to cart'),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                icon: const Icon(Icons.add_shopping_cart, size: 16),
+                label: const Text('Add'),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );

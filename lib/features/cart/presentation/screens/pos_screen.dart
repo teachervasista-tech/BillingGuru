@@ -4,16 +4,33 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/widgets/side_navigation_rail.dart';
 import '../../../products/presentation/widgets/product_search_field.dart';
+import '../../../products/presentation/view_models/product_view_model.dart';
 import '../../domain/cart_item.dart';
 import '../view_models/cart_view_model.dart';
 import '../widgets/cart_item_tile.dart';
 import '../widgets/cart_summary.dart';
 
-class PosScreen extends ConsumerWidget {
+class PosScreen extends ConsumerStatefulWidget {
   const PosScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PosScreen> createState() {
+    return _PosScreenState();
+  }
+}
+
+class _PosScreenState extends ConsumerState<PosScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    Future.microtask(() {
+      ref.read(productViewModelProvider.notifier).loadProducts();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final cart = ref.watch(cartProvider);
 
     return Scaffold(
@@ -54,34 +71,34 @@ class PosScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  void _navigateToDestination(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        context.go('/dashboard');
-        break;
-      case 1:
-        context.go('/pos');
-        break;
-      case 2:
-        context.go('/products');
-        break;
-      case 3:
-        context.go('/inventory');
-        break;
-      case 4:
-        context.go('/sales');
-        break;
-      case 5:
-        context.go('/customers');
-        break;
-      case 6:
-        context.go('/reports');
-        break;
-      case 7:
-        context.go('/settings');
-        break;
-    }
+void _navigateToDestination(BuildContext context, int index) {
+  switch (index) {
+    case 0:
+      context.go('/dashboard');
+      break;
+    case 1:
+      context.go('/pos');
+      break;
+    case 2:
+      context.go('/products');
+      break;
+    case 3:
+      context.go('/inventory');
+      break;
+    case 4:
+      context.go('/sales');
+      break;
+    case 5:
+      context.go('/customers');
+      break;
+    case 6:
+      context.go('/reports');
+      break;
+    case 7:
+      context.go('/settings');
+      break;
   }
 }
 

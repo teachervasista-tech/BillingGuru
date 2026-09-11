@@ -25,4 +25,8 @@ class ProductRepository {
   Future<void> addProduct(Product product) {
     return localService.insertProduct(product);
   }
+
+  Future<void> updateProduct(Product product) {
+    return localService.updateProduct(product);
+  }
 }

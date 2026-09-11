@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/models/product.dart';
 import '../view_models/product_view_model.dart';
 
 class ProductFormDialog extends ConsumerStatefulWidget {
-  const ProductFormDialog({super.key});
+  const ProductFormDialog({super.key, this.product});
+
+  final Product? product;
+
+  bool get isEditing => product != null;
 
   @override
   ConsumerState<ProductFormDialog> createState() {
@@ -15,13 +20,38 @@ class ProductFormDialog extends ConsumerStatefulWidget {
 class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
   final _formKey = GlobalKey<FormState>();
 
-  final _barcodeController = TextEditingController();
-  final _nameController = TextEditingController();
-  final _priceController = TextEditingController();
-  final _taxController = TextEditingController(text: '19');
-  final _stockController = TextEditingController();
+  late final TextEditingController _barcodeController;
+  late final TextEditingController _nameController;
+  late final TextEditingController _priceController;
+  late final TextEditingController _taxController;
+  late final TextEditingController _stockController;
 
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final product = widget.product;
+
+    _barcodeController = TextEditingController(text: product?.barcode ?? '');
+
+    _nameController = TextEditingController(text: product?.name ?? '');
+
+    _priceController = TextEditingController(
+      text: product == null
+          ? ''
+          : (product.priceCents / 100).toStringAsFixed(2),
+    );
+
+    _taxController = TextEditingController(
+      text: product?.taxRate.toString() ?? '19',
+    );
+
+    _stockController = TextEditingController(
+      text: product?.stockQuantity.toString() ?? '',
+    );
+  }
 
   @override
   void dispose() {
@@ -41,21 +71,35 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     final priceCents = _parsePriceToCents(_priceController.text);
 
     final taxRate = int.parse(_taxController.text.trim());
+
     final stockQuantity = int.parse(_stockController.text.trim());
 
     setState(() {
       _isSaving = true;
     });
 
-    final success = await ref
-        .read(productViewModelProvider.notifier)
-        .addProduct(
-          barcode: _barcodeController.text,
-          name: _nameController.text,
-          priceCents: priceCents,
-          taxRate: taxRate,
-          stockQuantity: stockQuantity,
-        );
+    final productViewModel = ref.read(productViewModelProvider.notifier);
+
+    final bool success;
+
+    if (widget.product == null) {
+      success = await productViewModel.addProduct(
+        barcode: _barcodeController.text,
+        name: _nameController.text,
+        priceCents: priceCents,
+        taxRate: taxRate,
+        stockQuantity: stockQuantity,
+      );
+    } else {
+      success = await productViewModel.updateProduct(
+        product: widget.product!,
+        barcode: _barcodeController.text,
+        name: _nameController.text,
+        priceCents: priceCents,
+        taxRate: taxRate,
+        stockQuantity: stockQuantity,
+      );
+    }
 
     if (!mounted) {
       return;
@@ -73,7 +117,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     final error = ref.read(productViewModelProvider).error;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(error?.toString() ?? 'Unable to add product.')),
+      SnackBar(content: Text(error?.toString() ?? 'Unable to save product.')),
     );
   }
 
@@ -99,7 +143,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     final parsed = int.tryParse(value.trim());
 
     if (parsed == null || parsed < 0) {
-      return 'Enter a valid non-negative number.';
+      return 'Enter a valid non-negative whole number.';
     }
 
     return null;
@@ -122,8 +166,10 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final title = widget.isEditing ? 'Edit product' : 'Add product';
+
     return AlertDialog(
-      title: const Text('Add product'),
+      title: Text(title),
       content: SizedBox(
         width: 450,
         child: Form(
@@ -216,7 +262,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.save),
-          label: const Text('Save'),
+          label: Text(widget.isEditing ? 'Update' : 'Save'),
         ),
       ],
     );

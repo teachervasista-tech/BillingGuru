@@ -14,4 +14,22 @@ class Product {
   final int priceCents;
   final int taxRate;
   final int stockQuantity;
+
+  Product copyWith({
+    String? id,
+    String? barcode,
+    String? name,
+    int? priceCents,
+    int? taxRate,
+    int? stockQuantity,
+  }) {
+    return Product(
+      id: id ?? this.id,
+      barcode: barcode ?? this.barcode,
+      name: name ?? this.name,
+      priceCents: priceCents ?? this.priceCents,
+      taxRate: taxRate ?? this.taxRate,
+      stockQuantity: stockQuantity ?? this.stockQuantity,
+    );
+  }
 }

@@ -104,4 +104,33 @@ class ProductLocalService {
       conflictAlgorithm: ConflictAlgorithm.abort,
     );
   }
+
+  Future<void> updateProduct(Product product) async {
+    final db = await database.database;
+
+    final duplicateBarcode = await db.query(
+      'products',
+      columns: ['id'],
+      where: 'barcode = ? AND id != ?',
+      whereArgs: [product.barcode, product.id],
+      limit: 1,
+    );
+
+    if (duplicateBarcode.isNotEmpty) {
+      throw Exception(
+        'A different product already uses barcode ${product.barcode}.',
+      );
+    }
+
+    final updatedRows = await db.update(
+      'products',
+      ProductMapper.toMap(product),
+      where: 'id = ?',
+      whereArgs: [product.id],
+    );
+
+    if (updatedRows == 0) {
+      throw Exception('Product ${product.id} was not found.');
+    }
+  }
 }
