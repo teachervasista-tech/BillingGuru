@@ -5,6 +5,7 @@ import '../features/cart/presentation/screens/pos_screen.dart';
 import '../features/checkout/presentation/screens/checkout_screen.dart';
 import '../features/sales/presentation/screens/sales_history_screen.dart';
 import '../features/products/presentation/screens/products_screen.dart';
+
 import 'screens/placeholder_screen.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -27,7 +28,9 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/sales',
-      builder: (context, state) => const SalesHistoryScreen(),
+      builder: (context, state) {
+        return const SalesHistoryScreen();
+      },
     ),
     GoRoute(
       path: '/customers',
