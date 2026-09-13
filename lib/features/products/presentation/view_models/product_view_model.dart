@@ -87,7 +87,8 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
   }
 
   Future<void> search(String value) async {
-    final currentShowInactive = state.value?.showInactive ?? false;
+    final currentShowInactive =
+        state.value?.showInactive ?? _showInactiveFallback();
 
     state = await AsyncValue.guard(
       () => _loadState(searchText: value, showInactive: currentShowInactive),
@@ -104,6 +105,10 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
     state = await AsyncValue.guard(
       () => _loadState(searchText: currentSearch, showInactive: value),
     );
+  }
+
+  bool _showInactiveFallback() {
+    return false;
   }
 
   Future<bool> addProduct({
