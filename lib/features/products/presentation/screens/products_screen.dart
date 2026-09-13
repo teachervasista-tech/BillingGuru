@@ -217,7 +217,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
       },
     );
 
-    if (!mounted) {
+    if (!context.mounted) {
       return;
     }
 

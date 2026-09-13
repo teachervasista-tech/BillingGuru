@@ -27,12 +27,16 @@ class ProductListItem extends ConsumerWidget {
   Future<void> _editProduct(BuildContext context) async {
     final updated = await showDialog<bool>(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return ProductFormDialog(product: product);
       },
     );
 
-    if (updated == true && context.mounted) {
+    if (!context.mounted) {
+      return;
+    }
+
+    if (updated == true) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Product updated successfully')),
       );
