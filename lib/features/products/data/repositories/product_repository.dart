@@ -34,6 +34,10 @@ class ProductRepository {
     return localService.deactivateProduct(productId);
   }
 
+  Future<List<Product>> getInactiveProducts({String search = ''}) {
+    return localService.getInactiveProducts(search: search);
+  }
+
   Future<void> activateProduct(String productId) {
     return localService.activateProduct(productId);
   }

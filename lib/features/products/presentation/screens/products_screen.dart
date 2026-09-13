@@ -7,6 +7,7 @@ import '../../../../app/widgets/copyright_banner.dart';
 import '../view_models/product_view_model.dart';
 import '../widgets/product_form_dialog.dart';
 import '../widgets/product_list_item.dart';
+import '../widgets/inactive_product_list_item.dart';
 
 class ProductsScreen extends ConsumerWidget {
   const ProductsScreen({super.key});
@@ -105,15 +106,29 @@ class ProductsScreen extends ConsumerWidget {
                         );
                       },
                       data: (productState) {
-                        if (productState.products.isEmpty) {
-                          return const Center(child: Text('No products found'));
+                        final visibleProducts = productState.visibleProducts;
+
+                        if (visibleProducts.isEmpty) {
+                          return Center(
+                            child: Text(
+                              productState.showInactive
+                                  ? 'No inactive products found'
+                                  : 'No active products found',
+                            ),
+                          );
                         }
 
                         return ListView.builder(
-                          itemCount: productState.products.length,
+                          itemCount: visibleProducts.length,
                           itemBuilder: (context, index) {
+                            final product = visibleProducts[index];
+
+                            if (productState.showInactive) {
+                              return InactiveProductListItem(product: product);
+                            }
+
                             return ProductListItem(
-                              product: productState.products[index],
+                              product: product,
                               showAddToCart: false,
                               showManagementActions: true,
                             );

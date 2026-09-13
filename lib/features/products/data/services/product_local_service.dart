@@ -155,12 +155,36 @@ class ProductLocalService {
     final updatedRows = await db.update(
       'products',
       {'is_active': 1},
-      where: 'id = ?',
-      whereArgs: [productId],
+      where: 'id = ? AND is_active = ?',
+      whereArgs: [productId, 0],
     );
 
     if (updatedRows == 0) {
-      throw Exception('Product $productId was not found.');
+      throw Exception('Inactive product $productId was not found.');
     }
+  }
+
+  Future<List<Product>> getInactiveProducts({String search = ''}) async {
+    final db = await database.database;
+    final trimmedSearch = search.trim();
+
+    final rows = await db.query(
+      'products',
+      where: trimmedSearch.isEmpty
+          ? 'is_active = ?'
+          : '''
+          is_active = ?
+          AND (
+            name LIKE ?
+            OR barcode LIKE ?
+          )
+        ''',
+      whereArgs: trimmedSearch.isEmpty
+          ? [0]
+          : [0, '%$trimmedSearch%', '%$trimmedSearch%'],
+      orderBy: 'name COLLATE NOCASE ASC',
+    );
+
+    return rows.map(ProductMapper.fromMap).toList();
   }
 }

@@ -15,15 +15,33 @@ final productViewModelProvider =
     AsyncNotifierProvider<ProductViewModel, ProductState>(ProductViewModel.new);
 
 class ProductState {
-  const ProductState({this.products = const [], this.searchText = ''});
+  const ProductState({
+    this.products = const [],
+    this.inactiveProducts = const [],
+    this.searchText = '',
+    this.showInactive = false,
+  });
 
   final List<Product> products;
+  final List<Product> inactiveProducts;
   final String searchText;
+  final bool showInactive;
 
-  ProductState copyWith({List<Product>? products, String? searchText}) {
+  List<Product> get visibleProducts {
+    return showInactive ? inactiveProducts : products;
+  }
+
+  ProductState copyWith({
+    List<Product>? products,
+    List<Product>? inactiveProducts,
+    String? searchText,
+    bool? showInactive,
+  }) {
     return ProductState(
       products: products ?? this.products,
+      inactiveProducts: inactiveProducts ?? this.inactiveProducts,
       searchText: searchText ?? this.searchText,
+      showInactive: showInactive ?? this.showInactive,
     );
   }
 }
@@ -31,38 +49,61 @@ class ProductState {
 class ProductViewModel extends AsyncNotifier<ProductState> {
   @override
   Future<ProductState> build() async {
-    final repository = ref.read(productRepositoryProvider);
-    final products = await repository.getAllProducts();
+    return _loadState();
+  }
 
-    return ProductState(products: products);
+  Future<ProductState> _loadState({
+    String? searchText,
+    bool? showInactive,
+  }) async {
+    final repository = ref.read(productRepositoryProvider);
+
+    final currentSearch = searchText ?? '';
+    final currentShowInactive = showInactive ?? false;
+
+    final activeProducts = await repository.searchProducts(currentSearch);
+
+    final inactiveProducts = await repository.getInactiveProducts(
+      search: currentSearch,
+    );
+
+    return ProductState(
+      products: activeProducts,
+      inactiveProducts: inactiveProducts,
+      searchText: currentSearch,
+      showInactive: currentShowInactive,
+    );
   }
 
   Future<void> loadProducts() async {
-    final repository = ref.read(productRepositoryProvider);
+    final currentState = state.value;
 
-    state = const AsyncLoading();
-
-    state = await AsyncValue.guard(() async {
-      final products = await repository.getAllProducts();
-
-      return ProductState(products: products);
-    });
+    state = await AsyncValue.guard(
+      () => _loadState(
+        searchText: currentState?.searchText,
+        showInactive: currentState?.showInactive,
+      ),
+    );
   }
 
   Future<void> search(String value) async {
-    final repository = ref.read(productRepositoryProvider);
+    final currentShowInactive = state.value?.showInactive ?? false;
 
-    state = const AsyncLoading();
-
-    state = await AsyncValue.guard(() async {
-      final products = await repository.searchProducts(value);
-
-      return ProductState(products: products, searchText: value);
-    });
+    state = await AsyncValue.guard(
+      () => _loadState(searchText: value, showInactive: currentShowInactive),
+    );
   }
 
   Future<void> clearSearch() {
     return search('');
+  }
+
+  Future<void> setShowInactive(bool value) async {
+    final currentSearch = state.value?.searchText ?? '';
+
+    state = await AsyncValue.guard(
+      () => _loadState(searchText: currentSearch, showInactive: value),
+    );
   }
 
   Future<bool> addProduct({
@@ -83,19 +124,14 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
       stockQuantity: stockQuantity,
     );
 
-    state = const AsyncLoading();
-
-    final result = await AsyncValue.guard(() async {
+    try {
       await repository.addProduct(product);
-
-      final products = await repository.getAllProducts();
-
-      return ProductState(products: products);
-    });
-
-    state = result;
-
-    return result.hasValue;
+      await _reloadAfterMutation();
+      return true;
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      return false;
+    }
   }
 
   Future<bool> updateProduct({
@@ -116,54 +152,50 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
       stockQuantity: stockQuantity,
     );
 
-    state = const AsyncLoading();
-
-    final result = await AsyncValue.guard(() async {
+    try {
       await repository.updateProduct(updatedProduct);
-
-      final products = await repository.getAllProducts();
-
-      return ProductState(products: products);
-    });
-
-    state = result;
-
-    return result.hasValue;
+      await _reloadAfterMutation();
+      return true;
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      return false;
+    }
   }
 
   Future<bool> deactivateProduct(String productId) async {
     final repository = ref.read(productRepositoryProvider);
 
-    state = const AsyncLoading();
-
-    final result = await AsyncValue.guard(() async {
+    try {
       await repository.deactivateProduct(productId);
-
-      final products = await repository.getAllProducts();
-
-      return ProductState(products: products);
-    });
-
-    state = result;
-
-    return result.hasValue;
+      await _reloadAfterMutation();
+      return true;
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      return false;
+    }
   }
 
   Future<bool> activateProduct(String productId) async {
     final repository = ref.read(productRepositoryProvider);
 
-    state = const AsyncLoading();
-
-    final result = await AsyncValue.guard(() async {
+    try {
       await repository.activateProduct(productId);
+      await _reloadAfterMutation();
+      return true;
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      return false;
+    }
+  }
 
-      final products = await repository.getAllProducts();
+  Future<void> _reloadAfterMutation() async {
+    final currentState = state.value;
 
-      return ProductState(products: products);
-    });
+    final refreshedState = await _loadState(
+      searchText: currentState?.searchText,
+      showInactive: currentState?.showInactive,
+    );
 
-    state = result;
-
-    return result.hasValue;
+    state = AsyncValue.data(refreshedState);
   }
 }
