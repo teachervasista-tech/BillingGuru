@@ -2,7 +2,7 @@ name: billing_guru
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -20,6 +20,17 @@ version: 1.0.0+1
 
 environment:
   sdk: ^3.13.2
+
+msix_config:
+  display_name: Billing Guru
+  publisher_display_name: Vasista Technologies
+  identity_name: Vasista.BillingGuru
+  msix_version: 1.0.0.0
+  logo_path: assets/icons/app_icon.png
+  capabilities: internetClient
+  # Optional but recommended for production:
+  # certificate_path: "C:\\path\\to\\your\\certificate.pfx"
+  # certificate_password: "YOUR_PFX_PASSWORD"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -54,17 +65,24 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  msix: ^3.18.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/
+    - assets/icons/
+    - assets/images/
+    # e.g., if you bundle a local DB:
+    # - assets/db/billing_guru.db
 
   # To add assets to your application, add an assets section, like this:
   # assets:
