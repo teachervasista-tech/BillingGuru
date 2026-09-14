@@ -22,29 +22,65 @@ class ProductLocalService {
     return rows.map(ProductMapper.fromMap).toList();
   }
 
-  Future<List<Product>> searchProducts(String query) async {
-    final searchText = query.trim();
+  Future<List<Product>> searchProducts(String query, {String? category}) async {
+    final db = await database.database;
 
-    if (searchText.isEmpty) {
-      return getAllProducts();
+    final searchText = query.trim();
+    final conditions = <String>['is_active = ?'];
+    final arguments = <Object?>[1];
+
+    if (searchText.isNotEmpty) {
+      conditions.add('(name LIKE ? OR barcode LIKE ?)');
+      arguments.add('%$searchText%');
+      arguments.add('%$searchText%');
     }
 
-    final db = await database.database;
+    if (category != null && category.isNotEmpty) {
+      conditions.add('category = ?');
+      arguments.add(category);
+    }
 
     final rows = await db.query(
       'products',
-      where: '''
-        is_active = ?
-        AND (
-          name LIKE ?
-          OR barcode LIKE ?
-        )
-      ''',
-      whereArgs: [1, '%$searchText%', '%$searchText%'],
+      where: conditions.join(' AND '),
+      whereArgs: arguments,
       orderBy: 'name COLLATE NOCASE ASC',
     );
 
     return rows.map(ProductMapper.fromMap).toList();
+  }
+
+  Future<List<String>> getActiveCategories() async {
+    final db = await database.database;
+
+    final rows = await db.rawQuery('''
+    SELECT DISTINCT category
+    FROM products
+    WHERE is_active = 1
+    ORDER BY category COLLATE NOCASE ASC
+    ''');
+
+    return rows
+        .map((row) => row['category'] as String)
+        .where((category) => category.trim().isNotEmpty)
+        .toList();
+  }
+
+  Future<Map<String, int>> getActiveCategoryCounts() async {
+    final db = await database.database;
+
+    final rows = await db.rawQuery('''
+    SELECT category, COUNT(*) AS product_count
+    FROM products
+    WHERE is_active = 1
+    GROUP BY category
+    ORDER BY category COLLATE NOCASE ASC
+    ''');
+
+    return {
+      for (final row in rows)
+        row['category'] as String: row['product_count'] as int,
+    };
   }
 
   Future<Product?> getProductById(String id) async {

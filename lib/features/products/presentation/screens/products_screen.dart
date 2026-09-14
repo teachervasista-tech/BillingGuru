@@ -173,37 +173,55 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
             ? productState.inactiveProducts
             : productState.products;
 
-        if (products.isEmpty) {
-          return Center(
-            child: Text(
-              _showInactive
-                  ? 'No inactive products found'
-                  : 'No active products found',
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _ProductCategorySummary(
+              categories: productState.categories,
+              categoryCounts: productState.categoryCounts,
+              selectedCategory: productState.selectedCategory,
+              onCategorySelected: (category) {
+                ref
+                    .read(productViewModelProvider.notifier)
+                    .selectCategory(category);
+              },
             ),
-          );
-        }
+            const SizedBox(height: 12),
+            Expanded(
+              child: products.isEmpty
+                  ? Center(
+                      child: Text(
+                        _showInactive
+                            ? 'No inactive products found'
+                            : 'No active products found',
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: () {
+                        return ref
+                            .read(productViewModelProvider.notifier)
+                            .loadProducts();
+                      },
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: products.length,
+                        itemBuilder: (context, index) {
+                          final product = products[index];
 
-        return RefreshIndicator(
-          onRefresh: () {
-            return ref.read(productViewModelProvider.notifier).loadProducts();
-          },
-          child: ListView.builder(
-            physics: const AlwaysScrollableScrollPhysics(),
-            itemCount: products.length,
-            itemBuilder: (context, index) {
-              final product = products[index];
+                          if (_showInactive) {
+                            return InactiveProductListItem(product: product);
+                          }
 
-              if (_showInactive) {
-                return InactiveProductListItem(product: product);
-              }
-
-              return ProductListItem(
-                product: product,
-                showAddToCart: false,
-                showManagementActions: true,
-              );
-            },
-          ),
+                          return ProductListItem(
+                            product: product,
+                            showAddToCart: false,
+                            showManagementActions: true,
+                          );
+                        },
+                      ),
+                    ),
+            ),
+          ],
         );
       },
     );
@@ -280,6 +298,59 @@ class _ErrorView extends StatelessWidget {
             label: const Text('Retry'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ProductCategorySummary extends StatelessWidget {
+  const _ProductCategorySummary({
+    required this.categories,
+    required this.categoryCounts,
+    required this.selectedCategory,
+    required this.onCategorySelected,
+  });
+
+  final List<String> categories;
+  final Map<String, int> categoryCounts;
+  final String? selectedCategory;
+  final ValueChanged<String?> onCategorySelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (categories.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ChoiceChip(
+              label: Text(
+                'All (${categoryCounts.values.fold<int>(0, (sum, count) => sum + count)})',
+              ),
+              selected: selectedCategory == null,
+              onSelected: (_) {
+                onCategorySelected(null);
+              },
+            ),
+            ...categories.map((category) {
+              final count = categoryCounts[category] ?? 0;
+
+              return ChoiceChip(
+                label: Text('$category ($count)'),
+                selected: selectedCategory == category,
+                onSelected: (_) {
+                  onCategorySelected(category);
+                },
+              );
+            }),
+          ],
+        ),
       ),
     );
   }

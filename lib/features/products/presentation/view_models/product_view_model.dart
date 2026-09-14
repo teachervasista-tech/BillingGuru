@@ -18,13 +18,19 @@ class ProductState {
   const ProductState({
     this.products = const [],
     this.inactiveProducts = const [],
+    this.categories = const [],
+    this.categoryCounts = const {},
     this.searchText = '',
+    this.selectedCategory,
     this.showInactive = false,
   });
 
   final List<Product> products;
   final List<Product> inactiveProducts;
+  final List<String> categories;
+  final Map<String, int> categoryCounts;
   final String searchText;
+  final String? selectedCategory;
   final bool showInactive;
 
   List<Product> get visibleProducts {
@@ -34,13 +40,22 @@ class ProductState {
   ProductState copyWith({
     List<Product>? products,
     List<Product>? inactiveProducts,
+    List<String>? categories,
+    Map<String, int>? categoryCounts,
     String? searchText,
+    String? selectedCategory,
+    bool clearSelectedCategory = false,
     bool? showInactive,
   }) {
     return ProductState(
       products: products ?? this.products,
       inactiveProducts: inactiveProducts ?? this.inactiveProducts,
+      categories: categories ?? this.categories,
+      categoryCounts: categoryCounts ?? this.categoryCounts,
       searchText: searchText ?? this.searchText,
+      selectedCategory: clearSelectedCategory
+          ? null
+          : selectedCategory ?? this.selectedCategory,
       showInactive: showInactive ?? this.showInactive,
     );
   }
@@ -54,23 +69,34 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
 
   Future<ProductState> _loadState({
     String? searchText,
+    String? selectedCategory,
     bool? showInactive,
   }) async {
     final repository = ref.read(productRepositoryProvider);
 
     final currentSearch = searchText ?? '';
+    final currentCategory = selectedCategory;
     final currentShowInactive = showInactive ?? false;
 
-    final activeProducts = await repository.searchProducts(currentSearch);
+    final activeProducts = await repository.searchProducts(
+      currentSearch,
+      category: currentCategory,
+    );
 
     final inactiveProducts = await repository.getInactiveProducts(
       search: currentSearch,
     );
 
+    final categories = await repository.getActiveCategories();
+    final categoryCounts = await repository.getActiveCategoryCounts();
+
     return ProductState(
       products: activeProducts,
       inactiveProducts: inactiveProducts,
+      categories: categories,
+      categoryCounts: categoryCounts,
       searchText: currentSearch,
+      selectedCategory: currentCategory,
       showInactive: currentShowInactive,
     );
   }
@@ -81,17 +107,33 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
     state = await AsyncValue.guard(
       () => _loadState(
         searchText: currentState?.searchText,
+        selectedCategory: currentState?.selectedCategory,
         showInactive: currentState?.showInactive,
       ),
     );
   }
 
   Future<void> search(String value) async {
-    final currentShowInactive =
-        state.value?.showInactive ?? _showInactiveFallback();
+    final currentState = state.value;
 
     state = await AsyncValue.guard(
-      () => _loadState(searchText: value, showInactive: currentShowInactive),
+      () => _loadState(
+        searchText: value,
+        selectedCategory: currentState?.selectedCategory,
+        showInactive: currentState?.showInactive,
+      ),
+    );
+  }
+
+  Future<void> selectCategory(String? category) async {
+    final currentState = state.value;
+
+    state = await AsyncValue.guard(
+      () => _loadState(
+        searchText: currentState?.searchText,
+        selectedCategory: category,
+        showInactive: currentState?.showInactive,
+      ),
     );
   }
 
@@ -107,13 +149,10 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
     );
   }
 
-  bool _showInactiveFallback() {
-    return false;
-  }
-
   Future<bool> addProduct({
     required String barcode,
     required String name,
+    required String category,
     required int priceCents,
     required int taxRate,
     required int stockQuantity,
@@ -124,6 +163,7 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
       id: 'p-${DateTime.now().microsecondsSinceEpoch}',
       barcode: barcode.trim(),
       name: name.trim(),
+      category: category.trim(),
       priceCents: priceCents,
       taxRate: taxRate,
       stockQuantity: stockQuantity,
@@ -143,6 +183,7 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
     required Product product,
     required String barcode,
     required String name,
+    required String category,
     required int priceCents,
     required int taxRate,
     required int stockQuantity,
@@ -152,6 +193,7 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
     final updatedProduct = product.copyWith(
       barcode: barcode.trim(),
       name: name.trim(),
+      category: category.trim(),
       priceCents: priceCents,
       taxRate: taxRate,
       stockQuantity: stockQuantity,

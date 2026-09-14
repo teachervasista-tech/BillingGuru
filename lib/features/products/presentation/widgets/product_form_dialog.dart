@@ -25,6 +25,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
   late final TextEditingController _priceController;
   late final TextEditingController _taxController;
   late final TextEditingController _stockController;
+  late final TextEditingController _categoryController;
 
   bool _isSaving = false;
 
@@ -51,6 +52,8 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     _stockController = TextEditingController(
       text: product?.stockQuantity.toString() ?? '',
     );
+
+    _categoryController = TextEditingController(text: product?.category ?? '');
   }
 
   @override
@@ -60,6 +63,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     _priceController.dispose();
     _taxController.dispose();
     _stockController.dispose();
+    _categoryController.dispose();
     super.dispose();
   }
 
@@ -86,6 +90,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
       success = await productViewModel.addProduct(
         barcode: _barcodeController.text,
         name: _nameController.text,
+        category: _categoryController.text,
         priceCents: priceCents,
         taxRate: taxRate,
         stockQuantity: stockQuantity,
@@ -95,6 +100,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
         product: widget.product!,
         barcode: _barcodeController.text,
         name: _nameController.text,
+        category: _categoryController.text,
         priceCents: priceCents,
         taxRate: taxRate,
         stockQuantity: stockQuantity,
@@ -184,6 +190,17 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
                   decoration: const InputDecoration(
                     labelText: 'Product name',
                     prefixIcon: Icon(Icons.label_outline),
+                  ),
+                  validator: _requiredValidator,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _categoryController,
+                  decoration: const InputDecoration(
+                    labelText: 'Category',
+                    hintText: 'Example: Beverages',
+                    prefixIcon: Icon(Icons.category_outlined),
                   ),
                   validator: _requiredValidator,
                   textInputAction: TextInputAction.next,

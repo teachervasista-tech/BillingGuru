@@ -60,6 +60,7 @@ class ProductListItem extends ConsumerWidget {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
+          'Category: ${product.category}\n'
           'Barcode: ${product.barcode}\n'
           'Stock: ${product.stockQuantity}',
         ),

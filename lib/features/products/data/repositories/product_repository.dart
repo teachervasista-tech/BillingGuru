@@ -10,8 +10,8 @@ class ProductRepository {
     return localService.getAllProducts();
   }
 
-  Future<List<Product>> searchProducts(String query) {
-    return localService.searchProducts(query);
+  Future<List<Product>> searchProducts(String query, {String? category}) {
+    return localService.searchProducts(query, category: category);
   }
 
   Future<Product?> getProductById(String id) {
@@ -40,5 +40,13 @@ class ProductRepository {
 
   Future<void> activateProduct(String productId) {
     return localService.activateProduct(productId);
+  }
+
+  Future<List<String>> getActiveCategories() {
+    return localService.getActiveCategories();
+  }
+
+  Future<Map<String, int>> getActiveCategoryCounts() {
+    return localService.getActiveCategoryCounts();
   }
 }
