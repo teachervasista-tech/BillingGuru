@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/product.dart';
 import '../view_models/product_view_model.dart';
+import '../../../../core/ui/app_snackbar.dart';
 
 class ProductFormDialog extends ConsumerStatefulWidget {
   const ProductFormDialog({super.key, this.product});
@@ -130,9 +131,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
 
     final error = ref.read(productViewModelProvider).error;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(error?.toString() ?? 'Unable to save product.')),
-    );
+    AppSnackbar.error(context, error?.toString() ?? 'Unable to save product.');
   }
 
   int _parsePriceToCents(String value) {

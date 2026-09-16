@@ -1,3 +1,4 @@
+import 'package:billing_guru/config/app_features.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -44,6 +45,14 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/customers',
+      name: 'customers',
+      redirect: (context, state) {
+        if (!AppFeatures.customersEnabled) {
+          return '/dashboard';
+        }
+
+        return null;
+      },
       builder: (context, state) {
         return const PlaceholderScreen(title: 'Customers', icon: Icons.people);
       },

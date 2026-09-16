@@ -1,3 +1,4 @@
+import 'package:billing_guru/core/ui/app_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -37,9 +38,7 @@ class ProductListItem extends ConsumerWidget {
     }
 
     if (updated == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Product updated successfully')),
-      );
+      AppSnackbar.success(context, 'Product updated successfully');
     }
   }
 
@@ -100,11 +99,9 @@ class ProductListItem extends ConsumerWidget {
                     : () {
                         ref.read(cartProvider.notifier).addProduct(product);
 
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('${product.name} added to cart'),
-                            duration: const Duration(seconds: 1),
-                          ),
+                        AppSnackbar.success(
+                          context,
+                          '${product.name} added to cart',
                         );
                       },
                 icon: const Icon(Icons.add_shopping_cart, size: 16),
@@ -151,10 +148,9 @@ class ProductListItem extends ConsumerWidget {
     } else {
       final error = ref.read(productViewModelProvider).error;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error?.toString() ?? 'Unable to deactivate product.'),
-        ),
+      AppSnackbar.error(
+        context,
+        Text(error?.toString() ?? 'Unable to deactivate product.').toString(),
       );
     }
   }

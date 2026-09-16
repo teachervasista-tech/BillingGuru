@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/inventory_item.dart';
 import '../view_models/inventory_view_model.dart';
+import '../../../../core/ui/app_snackbar.dart';
 import 'stock_adjustment_dialog.dart';
 
 class InventoryListItem extends ConsumerWidget {
@@ -103,13 +104,11 @@ class InventoryListItem extends ConsumerWidget {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success ? 'Stock updated successfully' : 'Unable to update stock',
-        ),
-      ),
-    );
+    if (success) {
+      AppSnackbar.success(context, 'Stock updated successfully');
+    } else {
+      AppSnackbar.error(context, 'Unable to update stock');
+    }
   }
 
   String _formatMoney(int cents) {

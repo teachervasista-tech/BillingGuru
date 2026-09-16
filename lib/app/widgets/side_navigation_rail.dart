@@ -1,3 +1,4 @@
+import 'package:billing_guru/config/app_features.dart';
 import 'package:flutter/material.dart';
 
 class SideNavigationRail extends StatelessWidget {
@@ -62,11 +63,12 @@ class SideNavigationRail extends StatelessWidget {
           selectedIcon: Icon(Icons.receipt_long),
           label: Text('Sales'),
         ),
-        NavigationRailDestination(
-          icon: Icon(Icons.people_outline),
-          selectedIcon: Icon(Icons.people),
-          label: Text('Customers'),
-        ),
+        if (AppFeatures.customersEnabled)
+          NavigationRailDestination(
+            icon: Icon(Icons.people_outline),
+            selectedIcon: Icon(Icons.people),
+            label: Text('Customers'),
+          ),
         NavigationRailDestination(
           icon: Icon(Icons.bar_chart_outlined),
           selectedIcon: Icon(Icons.bar_chart),

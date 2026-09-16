@@ -8,6 +8,7 @@ import '../view_models/product_view_model.dart';
 import '../widgets/inactive_product_list_item.dart';
 import '../widgets/product_form_dialog.dart';
 import '../widgets/product_list_item.dart';
+import '../../../../core/ui/app_snackbar.dart';
 
 class ProductsScreen extends ConsumerStatefulWidget {
   const ProductsScreen({super.key});
@@ -240,9 +241,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     }
 
     if (added == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Product added successfully')),
-      );
+      AppSnackbar.success(context, 'Product added successfully');
     }
   }
 

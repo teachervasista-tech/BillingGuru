@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/product.dart';
 import '../view_models/product_view_model.dart';
+import '../../../../core/ui/app_snackbar.dart';
 import 'confirm_product_activation_dialog.dart';
 import 'product_form_dialog.dart';
 
@@ -73,14 +74,10 @@ class InactiveProductListItem extends ConsumerWidget {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success
-              ? '${product.name} was reactivated'
-              : 'Unable to reactivate product',
-        ),
-      ),
-    );
+    if (success) {
+      AppSnackbar.success(context, '${product.name} was reactivated');
+    } else {
+      AppSnackbar.error(context, 'Unable to reactivate product');
+    }
   }
 }
