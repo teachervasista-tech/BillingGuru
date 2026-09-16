@@ -30,7 +30,15 @@ class ProductLocalService {
     final arguments = <Object?>[1];
 
     if (searchText.isNotEmpty) {
-      conditions.add('(name LIKE ? OR barcode LIKE ?)');
+      conditions.add('''
+      (
+        short_code LIKE ?
+        OR barcode LIKE ?
+        OR name LIKE ?
+      )
+      ''');
+
+      arguments.add('%$searchText%');
       arguments.add('%$searchText%');
       arguments.add('%$searchText%');
     }
@@ -211,13 +219,14 @@ class ProductLocalService {
           : '''
           is_active = ?
           AND (
-            name LIKE ?
+            short_code LIKE ?
+            OR name LIKE ?
             OR barcode LIKE ?
           )
         ''',
       whereArgs: trimmedSearch.isEmpty
           ? [0]
-          : [0, '%$trimmedSearch%', '%$trimmedSearch%'],
+          : [0, '%$trimmedSearch%', '%$trimmedSearch%', '%$trimmedSearch%'],
       orderBy: 'name COLLATE NOCASE ASC',
     );
 

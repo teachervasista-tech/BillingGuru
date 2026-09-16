@@ -4,6 +4,7 @@ class ProductMapper {
   static Product fromMap(Map<String, Object?> map) {
     return Product(
       id: map['id'] as String,
+      shortCode: map['short_code'] as String,
       barcode: map['barcode'] as String,
       name: map['name'] as String,
       category: (map['category'] as String?) ?? 'Other',
@@ -17,6 +18,7 @@ class ProductMapper {
   static Map<String, Object?> toMap(Product product) {
     return {
       'id': product.id,
+      'short_code': product.shortCode,
       'barcode': product.barcode,
       'name': product.name,
       'category': product.category,

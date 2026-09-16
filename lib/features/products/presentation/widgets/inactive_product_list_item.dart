@@ -22,8 +22,8 @@ class InactiveProductListItem extends ConsumerWidget {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
-          '${product.category}\n'
-          'Barcode: ${product.barcode}\n'
+          'Code: ${product.shortCode}\n'
+          'Category: ${product.category}\n'
           'Stock: ${product.stockQuantity}',
         ),
         isThreeLine: true,

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app.dart';
 import 'core/database/database_initializer.dart';
+import 'core/database/app_database.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,6 +13,7 @@ Future<void> main() async {
   //await AppDatabase.instance.deleteDatabaseForDevelopment();
 
   await initializeDatabase();
+  await AppDatabase.instance.database;
 
   runApp(ProviderScope(child: BillingGuru()));
 }

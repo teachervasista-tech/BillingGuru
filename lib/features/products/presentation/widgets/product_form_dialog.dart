@@ -26,6 +26,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
   late final TextEditingController _taxController;
   late final TextEditingController _stockController;
   late final TextEditingController _categoryController;
+  late final TextEditingController _shortCodeController;
 
   bool _isSaving = false;
 
@@ -54,6 +55,10 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     );
 
     _categoryController = TextEditingController(text: product?.category ?? '');
+
+    _shortCodeController = TextEditingController(
+      text: product?.shortCode ?? '',
+    );
   }
 
   @override
@@ -64,6 +69,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     _taxController.dispose();
     _stockController.dispose();
     _categoryController.dispose();
+    _shortCodeController.dispose();
     super.dispose();
   }
 
@@ -88,6 +94,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
 
     if (widget.product == null) {
       success = await productViewModel.addProduct(
+        shortCode: _shortCodeController.text,
         barcode: _barcodeController.text,
         name: _nameController.text,
         category: _categoryController.text,
@@ -98,6 +105,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     } else {
       success = await productViewModel.updateProduct(
         product: widget.product!,
+        shortCode: _shortCodeController.text,
         barcode: _barcodeController.text,
         name: _nameController.text,
         category: _categoryController.text,
@@ -203,6 +211,34 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
                     prefixIcon: Icon(Icons.category_outlined),
                   ),
                   validator: _requiredValidator,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _shortCodeController,
+                  decoration: const InputDecoration(
+                    labelText: 'Short code',
+                    hintText: 'Example: COF001',
+                    prefixIcon: Icon(Icons.code),
+                  ),
+                  textCapitalization: TextCapitalization.characters,
+                  validator: (value) {
+                    final shortCode = value?.trim() ?? '';
+
+                    if (shortCode.isEmpty) {
+                      return 'Short code is required.';
+                    }
+
+                    if (shortCode.length > 20) {
+                      return 'Short code must be 20 characters or less.';
+                    }
+
+                    if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(shortCode)) {
+                      return 'Use letters, numbers, hyphens, or underscores.';
+                    }
+
+                    return null;
+                  },
                   textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 12),

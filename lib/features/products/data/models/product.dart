@@ -1,6 +1,7 @@
 class Product {
   const Product({
     required this.id,
+    required this.shortCode,
     required this.barcode,
     required this.name,
     required this.category,
@@ -11,6 +12,7 @@ class Product {
   });
 
   final String id;
+  final String shortCode;
   final String barcode;
   final String name;
   final String category;
@@ -21,6 +23,7 @@ class Product {
 
   Product copyWith({
     String? id,
+    String? shortCode,
     String? barcode,
     String? name,
     String? category,
@@ -31,6 +34,7 @@ class Product {
   }) {
     return Product(
       id: id ?? this.id,
+      shortCode: shortCode ?? this.shortCode,
       barcode: barcode ?? this.barcode,
       name: name ?? this.name,
       category: category ?? this.category,

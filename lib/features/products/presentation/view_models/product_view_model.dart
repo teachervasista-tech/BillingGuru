@@ -150,6 +150,7 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
   }
 
   Future<bool> addProduct({
+    required String shortCode,
     required String barcode,
     required String name,
     required String category,
@@ -161,6 +162,7 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
 
     final product = Product(
       id: 'p-${DateTime.now().microsecondsSinceEpoch}',
+      shortCode: shortCode.trim().toUpperCase(),
       barcode: barcode.trim(),
       name: name.trim(),
       category: category.trim(),
@@ -181,6 +183,7 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
 
   Future<bool> updateProduct({
     required Product product,
+    required String shortCode,
     required String barcode,
     required String name,
     required String category,
@@ -191,6 +194,7 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
     final repository = ref.read(productRepositoryProvider);
 
     final updatedProduct = product.copyWith(
+      shortCode: shortCode.trim().toUpperCase(),
       barcode: barcode.trim(),
       name: name.trim(),
       category: category.trim(),
