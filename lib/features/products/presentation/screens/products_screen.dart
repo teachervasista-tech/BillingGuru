@@ -262,9 +262,9 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
       case 4:
         context.go('/sales');
         break;
-      case 5:
-        context.go('/customers');
-        break;
+      //case 5:
+      //  context.go('/customers');
+      //  break;
       case 6:
         context.go('/reports');
         break;

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/widgets/side_navigation_rail.dart';
 import '../../../../app/widgets/copyright_banner.dart';
+import '../../../../config/app_features.dart';
 import '../../../products/presentation/widgets/product_search_field.dart';
 import '../../../products/presentation/view_models/product_view_model.dart';
 import '../../domain/cart_item.dart';
@@ -92,9 +93,9 @@ void _navigateToDestination(BuildContext context, int index) {
     case 4:
       context.go('/sales');
       break;
-    case 5:
-      context.go('/customers');
-      break;
+    //case AppFeatures.customersEnabled:
+    //  context.go('/customers');
+    //  break;
     case 6:
       context.go('/reports');
       break;

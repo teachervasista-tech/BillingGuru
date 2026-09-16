@@ -1,3 +1,4 @@
+import 'package:billing_guru/config/app_features.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/widgets/side_navigation_rail.dart';
 import '../../../../app/widgets/copyright_banner.dart';
 import '../../data/models/sale_summary.dart';
+import 
 import '../view_models/sales_view_model.dart';
 
 class SalesHistoryScreen extends ConsumerStatefulWidget {
@@ -161,9 +163,9 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
       case 4:
         context.go('/sales');
         break;
-      case 5:
-        context.go('/customers');
-        break;
+      //case AppFeatures.customersEnabled:
+      //  context.go('/customers');
+      //  break;
       case 6:
         context.go('/reports');
         break;
