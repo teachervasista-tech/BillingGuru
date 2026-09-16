@@ -18,7 +18,7 @@ samples, guidance on mobile development, and a full API reference.
 
 
 #### Executing the Project
-dart pub get
-dart format lib
-flutter analyze
-flutter run -d windows 
+-> dart pub get
+-> dart format lib
+-> flutter analyze
+-> flutter run -d windows 
