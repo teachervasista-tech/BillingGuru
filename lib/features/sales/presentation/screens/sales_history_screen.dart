@@ -1,12 +1,8 @@
-import 'package:billing_guru/config/app_features.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../../app/widgets/side_navigation_rail.dart';
 import '../../../../app/widgets/copyright_banner.dart';
 import '../../data/models/sale_summary.dart';
-import 
 import '../view_models/sales_view_model.dart';
 
 class SalesHistoryScreen extends ConsumerStatefulWidget {
@@ -56,12 +52,6 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
       ),
       body: Row(
         children: [
-          SideNavigationRail(
-            selectedIndex: 4,
-            onDestinationSelected: (index) {
-              _navigateToDestination(context, index);
-            },
-          ),
           const VerticalDivider(width: 1, thickness: 1),
           Expanded(
             child: Padding(
@@ -144,35 +134,6 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
       ),
       bottomNavigationBar: const CopyrightBanner(),
     );
-  }
-
-  void _navigateToDestination(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        context.go('/dashboard');
-        break;
-      case 1:
-        context.go('/pos');
-        break;
-      case 2:
-        context.go('/products');
-        break;
-      case 3:
-        context.go('/inventory');
-        break;
-      case 4:
-        context.go('/sales');
-        break;
-      //case AppFeatures.customersEnabled:
-      //  context.go('/customers');
-      //  break;
-      case 6:
-        context.go('/reports');
-        break;
-      case 7:
-        context.go('/settings');
-        break;
-    }
   }
 }
 

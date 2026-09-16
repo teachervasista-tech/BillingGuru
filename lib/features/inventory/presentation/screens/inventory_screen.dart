@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../app/widgets/copyright_banner.dart';
-import '../../../../app/widgets/side_navigation_rail.dart';
 import '../view_models/inventory_view_model.dart';
 import '../widgets/inventory_list_item.dart';
 
@@ -54,12 +52,6 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
       ),
       body: Row(
         children: [
-          SideNavigationRail(
-            selectedIndex: 3,
-            onDestinationSelected: (index) {
-              _navigateToDestination(context, index);
-            },
-          ),
           const VerticalDivider(width: 1, thickness: 1),
           Expanded(
             child: Padding(
@@ -182,34 +174,5 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
       ),
       bottomNavigationBar: const CopyrightBanner(),
     );
-  }
-
-  void _navigateToDestination(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        context.go('/dashboard');
-        break;
-      case 1:
-        context.go('/pos');
-        break;
-      case 2:
-        context.go('/products');
-        break;
-      case 3:
-        context.go('/inventory');
-        break;
-      case 4:
-        context.go('/sales');
-        break;
-      //case 5:
-      //  context.go('/customers');
-      //  break;
-      case 6:
-        context.go('/reports');
-        break;
-      case 7:
-        context.go('/settings');
-        break;
-    }
   }
 }

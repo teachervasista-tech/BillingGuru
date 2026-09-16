@@ -1,4 +1,4 @@
-import 'package:billing_guru/config/app_features.dart';
+import 'package:billing_guru/core/config/app_features.dart';
 import 'package:flutter/material.dart';
 
 class SideNavigationRail extends StatelessWidget {

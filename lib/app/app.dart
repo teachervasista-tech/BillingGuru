@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'router.dart';
+import 'router/app_router.dart';
 import 'theme.dart';
 
 class BillingGuru extends StatelessWidget {

@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../app/widgets/side_navigation_rail.dart';
 import '../../../../app/widgets/copyright_banner.dart';
-import '../../../../config/app_features.dart';
 import '../../../products/presentation/widgets/product_search_field.dart';
 import '../../../products/presentation/view_models/product_view_model.dart';
 import '../../domain/cart_item.dart';
@@ -53,12 +51,6 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       ),
       body: Row(
         children: [
-          SideNavigationRail(
-            selectedIndex: 1,
-            onDestinationSelected: (index) {
-              _navigateToDestination(context, index);
-            },
-          ),
           const VerticalDivider(width: 1, thickness: 1),
           Expanded(
             child: Row(
@@ -73,35 +65,6 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       ),
       bottomNavigationBar: const CopyrightBanner(),
     );
-  }
-}
-
-void _navigateToDestination(BuildContext context, int index) {
-  switch (index) {
-    case 0:
-      context.go('/dashboard');
-      break;
-    case 1:
-      context.go('/pos');
-      break;
-    case 2:
-      context.go('/products');
-      break;
-    case 3:
-      context.go('/inventory');
-      break;
-    case 4:
-      context.go('/sales');
-      break;
-    //case AppFeatures.customersEnabled:
-    //  context.go('/customers');
-    //  break;
-    case 6:
-      context.go('/reports');
-      break;
-    case 7:
-      context.go('/settings');
-      break;
   }
 }
 

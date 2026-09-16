@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../data/models/dashboard_summary.dart';
 import '../view_models/dashboard_view_model.dart';
 import '../../../../app/widgets/copyright_banner.dart';
-import '../../../../app/widgets/side_navigation_rail.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -29,12 +28,6 @@ class DashboardScreen extends ConsumerWidget {
       ),
       body: Row(
         children: [
-          SideNavigationRail(
-            selectedIndex: 0,
-            onDestinationSelected: (index) {
-              _navigateToDestination(context, index);
-            },
-          ),
           const VerticalDivider(width: 1, thickness: 1),
           Expanded(
             child: dashboardAsync.when(
@@ -67,35 +60,6 @@ class DashboardScreen extends ConsumerWidget {
       ),
       bottomNavigationBar: const CopyrightBanner(),
     );
-  }
-
-  void _navigateToDestination(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        context.go('/dashboard');
-        break;
-      case 1:
-        context.go('/pos');
-        break;
-      case 2:
-        context.go('/products');
-        break;
-      case 3:
-        context.go('/inventory');
-        break;
-      case 4:
-        context.go('/sales');
-        break;
-      //case 5:
-      //  context.go('/customers');
-      //  break;
-      case 6:
-        context.go('/reports');
-        break;
-      case 7:
-        context.go('/settings');
-        break;
-    }
   }
 }
 
