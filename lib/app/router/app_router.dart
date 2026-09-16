@@ -8,6 +8,7 @@ import '../../features/sales/presentation/screens/sales_history_screen.dart';
 import '../../features/inventory/presentation/screens/inventory_screen.dart';
 import '../../features/cart/presentation/screens/pos_screen.dart';
 import '../../features/checkout/presentation/screens/checkout_screen.dart';
+import '../../features/reports/presentation/screens/reports_screen.dart';
 import '../screens/placeholder_screen.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -63,13 +64,10 @@ final GoRouter appRouter = GoRouter(
           },
         ),
         GoRoute(
-          path: '/reporting',
-          name: 'reporting',
+          path: '/reports',
+          name: 'reports',
           builder: (context, state) {
-            return const PlaceholderScreen(
-              title: 'Reporting',
-              icon: Icons.bar_chart,
-            );
+            return const ReportsPage();
           },
         ),
         GoRoute(

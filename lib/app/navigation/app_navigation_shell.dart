@@ -46,7 +46,7 @@ class AppNavigationShell extends StatelessWidget {
       return 5;
     }
 
-    if (path.startsWith('/reporting')) {
+    if (path.startsWith('/reports')) {
       return 6;
     }
 
@@ -109,7 +109,7 @@ class _AppNavigationRail extends StatelessWidget {
       const NavigationRailDestination(
         icon: Icon(Icons.analytics_outlined),
         selectedIcon: Icon(Icons.analytics),
-        label: Text('Reporting'),
+        label: Text('Reports'),
       ),
       const NavigationRailDestination(
         icon: Icon(Icons.settings_outlined),
@@ -161,7 +161,7 @@ class _AppNavigationRail extends StatelessWidget {
         return;
 
       case 6:
-        context.go('/reporting');
+        context.go('/reports');
         return;
 
       case 7:
