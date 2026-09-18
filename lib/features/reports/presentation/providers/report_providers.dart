@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../data/models/report_models.dart';
 import '../../data/services/report_local_service.dart';
@@ -8,15 +9,24 @@ final reportLocalServiceProvider = Provider<ReportLocalService>((ref) {
 });
 
 final reportProvider = FutureProvider.autoDispose
-    .family<ReportData, ReportPeriod>((ref, period) async {
+    .family<ReportData, ReportFilter>((ref, filter) async {
+      debugPrint(
+        '[Reports] Provider started: '
+        'type=${filter.type}, '
+        'from=${filter.from}, '
+        'to=${filter.to}',
+      );
+
       final service = ref.read(reportLocalServiceProvider);
 
-      final dailySales = await service.getDailySales(
+      final period = _periodFromFilter(filter);
+
+      final summary = await service.getSalesSummary(
         from: period.from,
         to: period.to,
       );
 
-      final summary = await service.getSalesSummary(
+      final dailySales = await service.getDailySales(
         from: period.from,
         to: period.to,
       );
@@ -117,6 +127,78 @@ class ReportPeriod {
       to: to,
       label: '${_formatDate(from)} - ${_formatDate(to)}',
     );
+  }
+}
+
+class ReportFilter {
+  const ReportFilter({required this.type, this.from, this.to});
+
+  final ReportPeriodType type;
+  final DateTime? from;
+  final DateTime? to;
+
+  @override
+  bool operator ==(Object other) {
+    return other is ReportFilter &&
+        other.type == type &&
+        other.from == from &&
+        other.to == to;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(type, from, to);
+  }
+}
+
+ReportPeriod _periodFromFilter(ReportFilter filter) {
+  if (filter.type == ReportPeriodType.custom) {
+    final from = filter.from;
+    final to = filter.to;
+
+    if (from == null || to == null) {
+      throw StateError('Custom report filter requires from and to dates.');
+    }
+
+    return ReportPeriod.custom(from: from, to: to);
+  }
+
+  final now = DateTime.now();
+
+  switch (filter.type) {
+    case ReportPeriodType.today:
+      final start = DateTime(now.year, now.month, now.day);
+
+      return ReportPeriod(
+        from: start,
+        to: start.add(const Duration(days: 1)),
+        label: 'Today',
+      );
+
+    case ReportPeriodType.lastSevenDays:
+      final end = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).add(const Duration(days: 1));
+
+      return ReportPeriod(
+        from: end.subtract(const Duration(days: 7)),
+        to: end,
+        label: 'Last 7 days',
+      );
+
+    case ReportPeriodType.thisMonth:
+      final start = DateTime(now.year, now.month);
+
+      final end = now.month == 12
+          ? DateTime(now.year + 1)
+          : DateTime(now.year, now.month + 1);
+
+      return ReportPeriod(from: start, to: end, label: 'This month');
+
+    case ReportPeriodType.custom:
+      throw StateError('Custom period should have been handled above.');
   }
 }
 

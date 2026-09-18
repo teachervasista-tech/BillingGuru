@@ -20,9 +20,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final period = _currentReportPeriod();
+    final filter = _currentFilter();
 
-    final reportAsync = ref.watch(reportProvider(period));
+    final reportAsync = ref.watch(reportProvider(filter));
 
     return Scaffold(
       appBar: AppBar(
@@ -74,7 +74,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
               child: OutlinedButton.icon(
                 onPressed: _selectCustomDateRange,
                 icon: const Icon(Icons.date_range),
-                label: Text(period.label),
+                label: Text(_periodLabel()),
               ),
             ),
         ],
@@ -94,7 +94,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
         data: (report) {
           return RefreshIndicator(
             onRefresh: () async {
-              ref.invalidate(reportProvider(period));
+              ref.invalidate(reportProvider(filter));
             },
             child: ListView(
               padding: const EdgeInsets.all(24),
@@ -116,21 +116,22 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
     );
   }
 
-  ReportPeriod _currentReportPeriod() {
+  ReportFilter _currentFilter() {
     if (_periodType == ReportPeriodType.custom) {
-      final customRange = _customDateRange;
+      final range = _customDateRange;
 
-      if (customRange == null) {
-        return ReportPeriod.fromType(ReportPeriodType.lastSevenDays);
+      if (range == null) {
+        return const ReportFilter(type: ReportPeriodType.lastSevenDays);
       }
 
-      return ReportPeriod.custom(
-        from: _startOfDay(customRange.start),
-        to: _endOfDay(customRange.end),
+      return ReportFilter(
+        type: ReportPeriodType.custom,
+        from: _startOfDay(range.start),
+        to: _endOfDay(range.end),
       );
     }
 
-    return ReportPeriod.fromType(_periodType);
+    return ReportFilter(type: _periodType);
   }
 
   DateTime _startOfDay(DateTime date) {
@@ -143,6 +144,39 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
       date.month,
       date.day,
     ).add(const Duration(days: 1));
+  }
+
+  String _periodLabel() {
+    if (_periodType != ReportPeriodType.custom) {
+      switch (_periodType) {
+        case ReportPeriodType.today:
+          return 'Today';
+
+        case ReportPeriodType.lastSevenDays:
+          return 'Last 7 days';
+
+        case ReportPeriodType.thisMonth:
+          return 'This month';
+
+        case ReportPeriodType.custom:
+          return 'Custom range';
+      }
+    }
+
+    final range = _customDateRange;
+
+    if (range == null) {
+      return 'Custom range';
+    }
+
+    return '${_formatDate(range.start)} - '
+        '${_formatDate(range.end)}';
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/'
+        '${date.year}';
   }
 
   Future<void> _selectCustomDateRange() async {

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -15,10 +17,13 @@ class AppDatabase {
     final existingDatabase = _database;
 
     if (existingDatabase != null && existingDatabase.isOpen) {
+      debugPrint('[Reports] Existing  database');
       return existingDatabase;
     }
-
+    debugPrint('[Reports] Opening database');
     _database = await _openDatabase();
+
+    debugPrint('[Reports] Database opened');
     return _database!;
   }
 
