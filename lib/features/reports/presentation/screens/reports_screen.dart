@@ -25,60 +25,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
     final reportAsync = ref.watch(reportProvider(filter));
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Reports'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: DropdownButton<ReportPeriodType>(
-              value: _periodType,
-              underline: const SizedBox.shrink(),
-              items: const [
-                DropdownMenuItem(
-                  value: ReportPeriodType.today,
-                  child: Text('Today'),
-                ),
-                DropdownMenuItem(
-                  value: ReportPeriodType.lastSevenDays,
-                  child: Text('Last 7 days'),
-                ),
-                DropdownMenuItem(
-                  value: ReportPeriodType.thisMonth,
-                  child: Text('This month'),
-                ),
-                DropdownMenuItem(
-                  value: ReportPeriodType.custom,
-                  child: Text('Custom range'),
-                ),
-              ],
-              onChanged: (periodType) async {
-                if (periodType == null) {
-                  return;
-                }
-
-                if (periodType == ReportPeriodType.custom) {
-                  await _selectCustomDateRange();
-                  return;
-                }
-
-                setState(() {
-                  _periodType = periodType;
-                  _customDateRange = null;
-                });
-              },
-            ),
-          ),
-          if (_periodType == ReportPeriodType.custom)
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: OutlinedButton.icon(
-                onPressed: _selectCustomDateRange,
-                icon: const Icon(Icons.date_range),
-                label: Text(_periodLabel()),
-              ),
-            ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Reports')),
       body: reportAsync.when(
         loading: () {
           return const Center(child: CircularProgressIndicator());
@@ -94,11 +41,19 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
         data: (report) {
           return RefreshIndicator(
             onRefresh: () async {
-              ref.invalidate(reportProvider(filter));
+              await ref.refresh(reportProvider(filter).future);
             },
             child: ListView(
               padding: const EdgeInsets.all(24),
               children: [
+                _ReportFilterCard(
+                  selectedType: _periodType,
+                  selectedRange: _customDateRange,
+                  label: _periodLabel(),
+                  onPeriodChanged: _onPeriodChanged,
+                  onCustomRangePressed: _selectCustomDateRange,
+                ),
+                const SizedBox(height: 24),
                 _SummarySection(summary: report.summary),
                 const SizedBox(height: 24),
                 _DailySalesCard(reports: report.dailySales),
@@ -114,6 +69,13 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
         },
       ),
     );
+  }
+
+  void _onPeriodChanged(ReportPeriodType periodType) {
+    setState(() {
+      _periodType = periodType;
+      _customDateRange = null;
+    });
   }
 
   ReportFilter _currentFilter() {
@@ -564,6 +526,168 @@ Color _chartColor(int index) {
   ];
 
   return colors[index % colors.length];
+}
+
+class _ReportFilterCard extends StatelessWidget {
+  const _ReportFilterCard({
+    required this.selectedType,
+    required this.selectedRange,
+    required this.label,
+    required this.onPeriodChanged,
+    required this.onCustomRangePressed,
+  });
+
+  final ReportPeriodType selectedType;
+  final DateTimeRange? selectedRange;
+  final String label;
+  final ValueChanged<ReportPeriodType> onPeriodChanged;
+  final VoidCallback onCustomRangePressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      elevation: 0,
+      color: colorScheme.surfaceContainerHighest,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.filter_alt_outlined, color: colorScheme.primary),
+                const SizedBox(width: 10),
+                Text(
+                  'Report period',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Choose the period used for the sales reports.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _ReportPeriodChip(
+                  label: 'Today',
+                  selected: selectedType == ReportPeriodType.today,
+                  onSelected: (_) {
+                    onPeriodChanged(ReportPeriodType.today);
+                  },
+                ),
+                _ReportPeriodChip(
+                  label: 'Last 7 days',
+                  selected: selectedType == ReportPeriodType.lastSevenDays,
+                  onSelected: (_) {
+                    onPeriodChanged(ReportPeriodType.lastSevenDays);
+                  },
+                ),
+                _ReportPeriodChip(
+                  label: 'This month',
+                  selected: selectedType == ReportPeriodType.thisMonth,
+                  onSelected: (_) {
+                    onPeriodChanged(ReportPeriodType.thisMonth);
+                  },
+                ),
+                _ReportPeriodChip(
+                  label: 'Custom range',
+                  selected: selectedType == ReportPeriodType.custom,
+                  onSelected: (_) {
+                    onPeriodChanged(ReportPeriodType.custom);
+                  },
+                ),
+              ],
+            ),
+            if (selectedType == ReportPeriodType.custom) ...[
+              const SizedBox(height: 16),
+              _DateRangeField(
+                label: label,
+                hasValue: selectedRange != null,
+                onTap: onCustomRangePressed,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReportPeriodChip extends StatelessWidget {
+  const _ReportPeriodChip({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final bool selected;
+  final ValueChanged<bool> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: onSelected,
+      showCheckmark: true,
+      avatar: selected
+          ? null
+          : const Icon(Icons.calendar_today_outlined, size: 18),
+    );
+  }
+}
+
+class _DateRangeField extends StatelessWidget {
+  const _DateRangeField({
+    required this.label,
+    required this.hasValue,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool hasValue;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'Date range',
+          prefixIcon: Icon(Icons.date_range),
+          suffixIcon: Icon(Icons.calendar_month),
+          border: OutlineInputBorder(),
+        ),
+        child: Text(
+          hasValue ? label : 'Select start and end dates',
+          style: TextStyle(
+            color: hasValue
+                ? Theme.of(context).colorScheme.onSurface
+                : Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 String _formatCurrency(int cents) {
