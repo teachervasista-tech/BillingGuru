@@ -1,3 +1,5 @@
+import 'package:billing_guru/core/currency/currency_formatter.dart';
+import 'package:billing_guru/core/currency/currency_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,8 +11,10 @@ import '../view_models/checkout_view_model.dart';
 class CheckoutScreen extends ConsumerWidget {
   const CheckoutScreen({super.key});
 
-  String formatMoney(int cents) {
-    return '€${(cents / 100).toStringAsFixed(2)}';
+  String formatMoney(WidgetRef ref, int cents) {
+    final currency = ref.watch(currencyProvider);
+
+    return CurrencyFormatter.formatCents(cents, currency: currency);
   }
 
   Future<void> _completeCashSale(BuildContext context, WidgetRef ref) async {
@@ -70,7 +74,7 @@ class CheckoutScreen extends ConsumerWidget {
                     const Text('Amount to pay'),
                     const SizedBox(height: 8),
                     Text(
-                      formatMoney(cartViewModel.totalCents),
+                      formatMoney(ref, cartViewModel.totalCents),
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),

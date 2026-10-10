@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -17,13 +15,13 @@ class AppDatabase {
     final existingDatabase = _database;
 
     if (existingDatabase != null && existingDatabase.isOpen) {
-      debugPrint('[Reports] Existing  database');
+      //debugPrint('[Reports] Existing  database');
       return existingDatabase;
     }
-    debugPrint('[Reports] Opening database');
+    //debugPrint('[Reports] Opening database');
     _database = await _openDatabase();
 
-    debugPrint('[Reports] Database opened');
+    //debugPrint('[Reports] Database opened');
     return _database!;
   }
 
@@ -91,6 +89,7 @@ class AppDatabase {
       barcode TEXT NOT NULL UNIQUE,
       name TEXT NOT NULL,
       category TEXT NOT NULL DEFAULT 'Other',
+      image_path TEXT,
       price_cents INTEGER NOT NULL,
       tax_rate INTEGER NOT NULL,
       stock_quantity INTEGER NOT NULL,
@@ -167,6 +166,7 @@ class AppDatabase {
         'name': 'Coffee',
         'category': 'Beverages',
         'price_cents': 299,
+        'image_path': null,
         'tax_rate': 19,
         'stock_quantity': 50,
         'is_active': 1,
@@ -178,6 +178,7 @@ class AppDatabase {
         'name': 'Tea',
         'category': 'Beverages',
         'price_cents': 199,
+        'image_path': null,
         'tax_rate': 19,
         'stock_quantity': 40,
         'is_active': 1,
@@ -189,6 +190,7 @@ class AppDatabase {
         'name': 'Sandwich',
         'category': 'Food',
         'price_cents': 499,
+        'image_path': null,
         'tax_rate': 7,
         'stock_quantity': 20,
         'is_active': 1,
@@ -200,6 +202,7 @@ class AppDatabase {
         'name': 'Water',
         'category': 'Beverages',
         'price_cents': 149,
+        'image_path': null,
         'tax_rate': 19,
         'stock_quantity': 100,
         'is_active': 1,

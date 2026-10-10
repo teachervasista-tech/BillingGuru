@@ -1,9 +1,11 @@
+import 'package:billing_guru/core/storage/product_image_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/product.dart';
 import '../view_models/product_view_model.dart';
 import '../../../../core/ui/app_snackbar.dart';
+import 'product_image_picker.dart';
 
 class ProductFormDialog extends ConsumerStatefulWidget {
   const ProductFormDialog({super.key, this.product});
@@ -30,12 +32,15 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
   late final TextEditingController _shortCodeController;
 
   bool _isSaving = false;
+  String? _imagePath;
 
   @override
   void initState() {
     super.initState();
 
     final product = widget.product;
+
+    _imagePath = widget.product?.imagePath;
 
     _barcodeController = TextEditingController(text: product?.barcode ?? '');
 
@@ -56,7 +61,6 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     );
 
     _categoryController = TextEditingController(text: product?.category ?? '');
-
     _shortCodeController = TextEditingController(
       text: product?.shortCode ?? '',
     );
@@ -102,8 +106,10 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
         priceCents: priceCents,
         taxRate: taxRate,
         stockQuantity: stockQuantity,
+        imagePath: _imagePath,
       );
     } else {
+      final oldImagePath = widget.product?.imagePath;
       success = await productViewModel.updateProduct(
         product: widget.product!,
         shortCode: _shortCodeController.text,
@@ -113,7 +119,11 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
         priceCents: priceCents,
         taxRate: taxRate,
         stockQuantity: stockQuantity,
+        imagePath: _imagePath,
       );
+      if (success && oldImagePath != null && oldImagePath != _imagePath) {
+        await ProductImageStorage.deleteImage(oldImagePath);
+      }
     }
 
     if (!mounted) {
@@ -213,6 +223,15 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
                   textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 12),
+                ProductImagePicker(
+                  imagePath: _imagePath,
+                  onImageChanged: (imagePath) {
+                    setState(() {
+                      _imagePath = imagePath;
+                    });
+                  },
+                ),
+                const SizedBox(height: 20),
                 TextFormField(
                   controller: _shortCodeController,
                   decoration: const InputDecoration(

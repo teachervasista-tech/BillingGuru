@@ -11,6 +11,7 @@ class ProductMapper {
       priceCents: map['price_cents'] as int,
       taxRate: map['tax_rate'] as int,
       stockQuantity: map['stock_quantity'] as int,
+      imagePath: map['image_path'] as String?,
       isActive: (map['is_active'] as int? ?? 1) == 1,
     );
   }
@@ -22,6 +23,7 @@ class ProductMapper {
       'barcode': product.barcode,
       'name': product.name,
       'category': product.category,
+      'image_path': product.imagePath,
       'price_cents': product.priceCents,
       'tax_rate': product.taxRate,
       'stock_quantity': product.stockQuantity,

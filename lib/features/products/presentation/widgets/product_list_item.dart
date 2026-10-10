@@ -1,4 +1,7 @@
+import 'package:billing_guru/core/currency/currency_formatter.dart';
+import 'package:billing_guru/core/currency/currency_provider.dart';
 import 'package:billing_guru/core/ui/app_snackbar.dart';
+import 'package:billing_guru/features/products/presentation/widgets/product_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,7 +9,6 @@ import '../../../cart/presentation/view_models/cart_view_model.dart';
 import '../../data/models/product.dart';
 import '../view_models/product_view_model.dart';
 import 'confirm_product_deactivation_dialog.dart';
-//import '../view_models/product_view_model.dart';
 import 'product_form_dialog.dart';
 
 class ProductListItem extends ConsumerWidget {
@@ -21,8 +23,10 @@ class ProductListItem extends ConsumerWidget {
   final bool showAddToCart;
   final bool showManagementActions;
 
-  String formatMoney(int cents) {
-    return '€${(cents / 100).toStringAsFixed(2)}';
+  String formatMoney(WidgetRef ref, int cents) {
+    final currency = ref.watch(currencyProvider);
+
+    return CurrencyFormatter.formatCents(cents, currency: currency);
   }
 
   Future<void> _editProduct(BuildContext context) async {
@@ -50,10 +54,7 @@ class ProductListItem extends ConsumerWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: colorScheme.primaryContainer,
-          child: Icon(Icons.inventory_2, color: colorScheme.onPrimaryContainer),
-        ),
+        leading: ProductThumbnail(imagePath: product.imagePath, size: 56),
         title: Text(
           product.name,
           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -68,8 +69,17 @@ class ProductListItem extends ConsumerWidget {
           spacing: 4,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: colorScheme.primaryContainer,
+              child: Icon(
+                Icons.inventory_2,
+                size: 18,
+                color: colorScheme.onPrimaryContainer,
+              ),
+            ),
             Text(
-              formatMoney(product.priceCents),
+              formatMoney(ref, product.priceCents),
               style: TextStyle(
                 color: colorScheme.primary,
                 fontWeight: FontWeight.bold,
@@ -132,25 +142,22 @@ class ProductListItem extends ConsumerWidget {
     }
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${product.name} was deactivated'),
-          action: SnackBarAction(
-            label: 'UNDO',
-            onPressed: () {
-              ref
-                  .read(productViewModelProvider.notifier)
-                  .activateProduct(product.id);
-            },
-          ),
-        ),
+      AppSnackbar.success(
+        context,
+        '${product.name} was deactivated',
+        actionLabel: 'UNDO',
+        onAction: () {
+          ref
+              .read(productViewModelProvider.notifier)
+              .activateProduct(product.id);
+        },
       );
     } else {
       final error = ref.read(productViewModelProvider).error;
 
       AppSnackbar.error(
         context,
-        Text(error?.toString() ?? 'Unable to deactivate product.').toString(),
+        error?.toString() ?? 'Unable to deactivate product.',
       );
     }
   }

@@ -1,3 +1,5 @@
+import 'package:billing_guru/core/currency/currency_formatter.dart';
+import 'package:billing_guru/core/currency/currency_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,8 +11,10 @@ class CartItemTile extends ConsumerWidget {
 
   final CartItem item;
 
-  String formatMoney(int cents) {
-    return '€${(cents / 100).toStringAsFixed(2)}';
+  String formatMoney(WidgetRef ref, int cents) {
+    final currency = ref.watch(currencyProvider);
+
+    return CurrencyFormatter.formatCents(cents, currency: currency);
   }
 
   @override
@@ -32,7 +36,7 @@ class CartItemTile extends ConsumerWidget {
                     item.product.name,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  Text('${formatMoney(item.product.priceCents)} each'),
+                  Text('${formatMoney(ref, item.product.priceCents)} each'),
                 ],
               ),
             ),
@@ -58,7 +62,7 @@ class CartItemTile extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              formatMoney(item.totalCents),
+              formatMoney(ref, item.totalCents),
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             IconButton(

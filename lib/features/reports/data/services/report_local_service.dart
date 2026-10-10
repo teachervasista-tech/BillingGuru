@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 import '../../../../core/database/app_database.dart';
 import '../models/report_models.dart';
 
@@ -13,7 +11,7 @@ class ReportLocalService {
     required DateTime from,
     required DateTime to,
   }) async {
-    debugPrint('[Reports] Loading sales summary');
+    //debugPrint('[Reports] Loading sales summary');
     final db = await _database.database;
 
     final rows = await db.rawQuery(
@@ -46,7 +44,7 @@ class ReportLocalService {
       ],
     );
 
-    debugPrint('[Reports] Sales summary loaded');
+    //debugPrint('[Reports] Sales summary loaded');
 
     final row = rows.first;
 
@@ -70,7 +68,7 @@ class ReportLocalService {
     required DateTime from,
     required DateTime to,
   }) async {
-    debugPrint('[Reports] Loading daily sales');
+    //debugPrint('[Reports] Loading daily sales');
     final db = await _database.database;
 
     final rows = await db.rawQuery(
@@ -87,7 +85,7 @@ class ReportLocalService {
       ''',
       [from.toIso8601String(), to.toIso8601String()],
     );
-    debugPrint('[Reports] Daily sales loaded: ${rows.length}');
+    //debugPrint('[Reports] Daily sales loaded: ${rows.length}');
 
     return rows.map((row) {
       final dateText = row['sale_date'] as String;

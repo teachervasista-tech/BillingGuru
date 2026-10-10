@@ -1,3 +1,5 @@
+import 'package:billing_guru/core/currency/currency_formatter.dart';
+import 'package:billing_guru/core/currency/currency_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -90,8 +92,9 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
                   const SizedBox(height: 16),
                   Expanded(
                     child: salesAsync.when(
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
+                      loading: () {
+                        return const Center(child: CircularProgressIndicator());
+                      },
                       error: (error, stackTrace) {
                         return _ErrorView(
                           message: 'Unable to load sales:\n$error',
@@ -137,14 +140,10 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
   }
 }
 
-class SaleListTile extends StatelessWidget {
-  const SaleListTile({super.key, required this.sale});
+class SaleListTile extends ConsumerWidget {
+  const SaleListTile({required this.sale, super.key});
 
   final SaleSummary sale;
-
-  String formatMoney(int cents) {
-    return '€${(cents / 100).toStringAsFixed(2)}';
-  }
 
   String formatDate(DateTime value) {
     final local = value.toLocal();
@@ -159,7 +158,9 @@ class SaleListTile extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currency = ref.watch(currencyProvider);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -179,7 +180,10 @@ class SaleListTile extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Text(
-                formatMoney(sale.totalCents),
+                CurrencyFormatter.formatCents(
+                  sale.totalCents,
+                  currency: currency,
+                ),
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -191,7 +195,7 @@ class SaleListTile extends StatelessWidget {
                 onPressed: () {
                   showDialog<void>(
                     context: context,
-                    builder: (context) {
+                    builder: (dialogContext) {
                       return SaleDetailsDialog(sale: sale);
                     },
                   );
@@ -205,17 +209,15 @@ class SaleListTile extends StatelessWidget {
   }
 }
 
-class SaleDetailsDialog extends StatelessWidget {
-  const SaleDetailsDialog({super.key, required this.sale});
+class SaleDetailsDialog extends ConsumerWidget {
+  const SaleDetailsDialog({required this.sale, super.key});
 
   final SaleSummary sale;
 
-  String formatMoney(int cents) {
-    return '€${(cents / 100).toStringAsFixed(2)}';
-  }
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currency = ref.watch(currencyProvider);
+
     return AlertDialog(
       title: Text(sale.invoiceNumber),
       content: SizedBox(
@@ -226,17 +228,32 @@ class SaleDetailsDialog extends StatelessWidget {
           children: [
             _DetailRow(
               label: 'Subtotal',
-              value: formatMoney(sale.subtotalCents),
+              value: CurrencyFormatter.formatCents(
+                sale.subtotalCents,
+                currency: currency,
+              ),
             ),
             _DetailRow(
               label: 'Discount',
-              value: formatMoney(sale.discountCents),
+              value: CurrencyFormatter.formatCents(
+                sale.discountCents,
+                currency: currency,
+              ),
             ),
-            _DetailRow(label: 'Tax', value: formatMoney(sale.taxCents)),
+            _DetailRow(
+              label: 'Tax',
+              value: CurrencyFormatter.formatCents(
+                sale.taxCents,
+                currency: currency,
+              ),
+            ),
             const Divider(),
             _DetailRow(
               label: 'Total',
-              value: formatMoney(sale.totalCents),
+              value: CurrencyFormatter.formatCents(
+                sale.totalCents,
+                currency: currency,
+              ),
               isTotal: true,
             ),
             const SizedBox(height: 12),

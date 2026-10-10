@@ -1,3 +1,5 @@
+import 'package:billing_guru/core/currency/currency_formatter.dart';
+import 'package:billing_guru/core/currency/currency_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,8 +9,10 @@ import '../view_models/cart_view_model.dart';
 class CartSummary extends ConsumerWidget {
   const CartSummary({super.key});
 
-  String formatMoney(int cents) {
-    return '€${(cents / 100).toStringAsFixed(2)}';
+  String formatMoney(WidgetRef ref, int cents) {
+    final currency = ref.watch(currencyProvider);
+
+    return CurrencyFormatter.formatCents(cents, currency: currency);
   }
 
   @override
@@ -30,7 +34,8 @@ class CartSummary extends ConsumerWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Cart: ${cartViewModel.itemCount} item(s)',
+                  'Cart: '
+                  '${cartViewModel.itemCount} item(s)',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ],
@@ -38,16 +43,16 @@ class CartSummary extends ConsumerWidget {
             const SizedBox(height: 12),
             _SummaryRow(
               label: 'Subtotal',
-              value: formatMoney(cartViewModel.subtotalCents),
+              value: formatMoney(ref, cartViewModel.subtotalCents),
             ),
             _SummaryRow(
               label: 'Tax',
-              value: formatMoney(cartViewModel.taxCents),
+              value: formatMoney(ref, cartViewModel.taxCents),
             ),
             const Divider(),
             _SummaryRow(
               label: 'Total',
-              value: formatMoney(cartViewModel.totalCents),
+              value: formatMoney(ref, cartViewModel.totalCents),
               isTotal: true,
             ),
             const SizedBox(height: 12),

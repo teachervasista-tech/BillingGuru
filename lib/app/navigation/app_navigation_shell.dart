@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_features.dart';
-import 'app_navigation_asset_icon.dart';
 
 class AppNavigationShell extends StatelessWidget {
   const AppNavigationShell({required this.child, super.key});
@@ -11,13 +10,29 @@ class AppNavigationShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final items = _navigationItems(context);
+
     final currentPath = GoRouterState.of(context).uri.path;
-    final selectedIndex = _selectedIndex(currentPath);
+
+    final selectedIndex = _selectedIndex(items, currentPath);
 
     return Scaffold(
       body: Row(
         children: [
-          _AppNavigationRail(selectedIndex: selectedIndex),
+          NavigationRail(
+            selectedIndex: selectedIndex,
+            labelType: NavigationRailLabelType.all,
+            onDestinationSelected: (index) {
+              context.go(items[index].route);
+            },
+            destinations: items.map((item) {
+              return NavigationRailDestination(
+                icon: item.icon,
+                selectedIcon: item.selectedIcon,
+                label: Text(item.label),
+              );
+            }).toList(),
+          ),
           const VerticalDivider(width: 1),
           Expanded(child: child),
         ],
@@ -25,160 +40,115 @@ class AppNavigationShell extends StatelessWidget {
     );
   }
 
-  int _selectedIndex(String path) {
-    if (path == '/dashboard' || path == '/') {
-      return 1;
-    }
+  int _selectedIndex(List<_NavigationItem> items, String currentPath) {
+    final index = items.indexWhere((item) {
+      return item.matches(currentPath);
+    });
 
-    if (path.startsWith('/pos')) {
-      return 2;
-    }
+    return index >= 0 ? index : 0;
+  }
 
-    if (path.startsWith('/products')) {
-      return 3;
-    }
-
-    if (path.startsWith('/inventory')) {
-      return 4;
-    }
-
-    if (path.startsWith('/sales')) {
-      return 5;
-    }
-
-    if (path.startsWith('/reports')) {
-      return 6;
-    }
-
-    if (path.startsWith('/settings')) {
-      return 7;
-    }
-
-    if (path.startsWith('/customers')) {
-      return 8;
-    }
-
-    return 0;
+  List<_NavigationItem> _navigationItems(BuildContext context) {
+    return [
+      if (AppFeatures.instance.homeEnabled)
+        _NavigationItem(
+          label: 'Home',
+          route: '/home',
+          icon: Image.asset(
+            'assets/images/navigation/home.png',
+            width: 24,
+            height: 24,
+            fit: BoxFit.contain,
+          ),
+          selectedIcon: Image.asset(
+            'assets/images/navigation/home.png',
+            width: 28,
+            height: 28,
+            fit: BoxFit.contain,
+          ),
+        ),
+      const _NavigationItem(
+        label: 'Dashboard',
+        route: '/dashboard',
+        icon: Icon(Icons.dashboard_outlined),
+        selectedIcon: Icon(Icons.dashboard),
+      ),
+      if (AppFeatures.instance.productsEnabled)
+        const _NavigationItem(
+          label: 'Products',
+          route: '/products',
+          icon: Icon(Icons.inventory_2_outlined),
+          selectedIcon: Icon(Icons.inventory_2),
+        ),
+      if (AppFeatures.instance.posEnabled)
+        const _NavigationItem(
+          label: 'PoS',
+          route: '/pos',
+          icon: Icon(Icons.point_of_sale_outlined),
+          selectedIcon: Icon(Icons.point_of_sale),
+          additionalPaths: ['/checkout'],
+        ),
+      if (AppFeatures.instance.customersEnabled)
+        const _NavigationItem(
+          label: 'Customers',
+          route: '/customers',
+          icon: Icon(Icons.people_outline),
+          selectedIcon: Icon(Icons.people),
+        ),
+      if (AppFeatures.instance.salesEnabled)
+        const _NavigationItem(
+          label: 'Sales',
+          route: '/sales',
+          icon: Icon(Icons.receipt_long_outlined),
+          selectedIcon: Icon(Icons.receipt_long),
+        ),
+      if (AppFeatures.instance.reportsEnabled)
+        const _NavigationItem(
+          label: 'Reports',
+          route: '/reports',
+          icon: Icon(Icons.analytics_outlined),
+          selectedIcon: Icon(Icons.analytics),
+        ),
+      if (AppFeatures.instance.inventoryEnabled)
+        const _NavigationItem(
+          label: 'Inventory',
+          route: '/inventory',
+          icon: Icon(Icons.warehouse_outlined),
+          selectedIcon: Icon(Icons.warehouse),
+        ),
+      if (AppFeatures.instance.settingsEnabled)
+        const _NavigationItem(
+          label: 'Settings',
+          route: '/settings',
+          icon: Icon(Icons.settings_outlined),
+          selectedIcon: Icon(Icons.settings),
+        ),
+    ];
   }
 }
 
-class _AppNavigationRail extends StatelessWidget {
-  const _AppNavigationRail({required this.selectedIndex});
+class _NavigationItem {
+  const _NavigationItem({
+    required this.label,
+    required this.route,
+    required this.icon,
+    required this.selectedIcon,
+    this.additionalPaths = const [],
+  });
 
-  final int selectedIndex;
+  final String label;
+  final String route;
+  final Widget icon;
+  final Widget selectedIcon;
+  final List<String> additionalPaths;
 
-  @override
-  Widget build(BuildContext context) {
-    final destinations = <NavigationRailDestination>[
-      NavigationRailDestination(
-        icon: const AppNavigationAssetIcon(
-          assetPath: 'assets/images/home.png',
-          size: 24,
-        ),
-        selectedIcon: const AppNavigationAssetIcon(
-          assetPath: 'assets/images/home.png',
-          size: 28,
-        ),
-        label: const Text('Home'),
-      ),
-      const NavigationRailDestination(
-        icon: Icon(Icons.dashboard_outlined),
-        selectedIcon: Icon(Icons.dashboard),
-        label: Text('Dashboard'),
-      ),
-      const NavigationRailDestination(
-        icon: Icon(Icons.point_of_sale_outlined),
-        selectedIcon: Icon(Icons.point_of_sale),
-        label: Text('PoS'),
-      ),
-      const NavigationRailDestination(
-        icon: Icon(Icons.inventory_2_outlined),
-        selectedIcon: Icon(Icons.inventory_2),
-        label: Text('Products'),
-      ),
-      const NavigationRailDestination(
-        icon: Icon(Icons.warehouse_outlined),
-        selectedIcon: Icon(Icons.warehouse),
-        label: Text('Inventory'),
-      ),
-      const NavigationRailDestination(
-        icon: Icon(Icons.receipt_long_outlined),
-        selectedIcon: Icon(Icons.receipt_long),
-        label: Text('Sales'),
-      ),
-      const NavigationRailDestination(
-        icon: Icon(Icons.analytics_outlined),
-        selectedIcon: Icon(Icons.analytics),
-        label: Text('Reports'),
-      ),
-      const NavigationRailDestination(
-        icon: Icon(Icons.settings_outlined),
-        selectedIcon: Icon(Icons.settings),
-        label: Text('Settings'),
-      ),
-      if (AppFeatures.customersEnabled)
-        const NavigationRailDestination(
-          icon: Icon(Icons.people_outline),
-          selectedIcon: Icon(Icons.people),
-          label: Text('Customers'),
-        ),
-    ];
-
-    return NavigationRail(
-      selectedIndex: selectedIndex,
-      labelType: NavigationRailLabelType.all,
-      onDestinationSelected: (index) {
-        _navigateToIndex(context, index);
-      },
-      destinations: destinations,
-    );
-  }
-
-  void _navigateToIndex(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        _refreshDashboard(context);
-        return;
-
-      case 1:
-        context.go('/dashboard');
-        return;
-
-      case 2:
-        context.go('/pos');
-        return;
-
-      case 3:
-        context.go('/products');
-        return;
-
-      case 4:
-        context.go('/inventory');
-        return;
-
-      case 5:
-        context.go('/sales');
-        return;
-
-      case 6:
-        context.go('/reports');
-        return;
-
-      case 7:
-        context.go('/settings');
-        return;
-
-      case 8:
-        if (AppFeatures.customersEnabled) {
-          context.go('/customers');
-        }
-        return;
+  bool matches(String currentPath) {
+    if (currentPath == route || currentPath.startsWith('$route/')) {
+      return true;
     }
-  }
 
-  void _refreshDashboard(BuildContext context) {
-    final router = GoRouter.of(context);
-
-    router.go('/dashboard?refresh=${DateTime.now().millisecondsSinceEpoch}');
+    return additionalPaths.any((path) {
+      return currentPath == path || currentPath.startsWith('$path/');
+    });
   }
 }

@@ -8,6 +8,7 @@ class Product {
     required this.priceCents,
     required this.taxRate,
     required this.stockQuantity,
+    this.imagePath,
     this.isActive = true,
   });
 
@@ -19,6 +20,7 @@ class Product {
   final int priceCents;
   final int taxRate;
   final int stockQuantity;
+  final String? imagePath;
   final bool isActive;
 
   Product copyWith({
@@ -30,6 +32,7 @@ class Product {
     int? priceCents,
     int? taxRate,
     int? stockQuantity,
+    String? imagePath,
     bool? isActive,
   }) {
     return Product(
@@ -41,6 +44,7 @@ class Product {
       priceCents: priceCents ?? this.priceCents,
       taxRate: taxRate ?? this.taxRate,
       stockQuantity: stockQuantity ?? this.stockQuantity,
+      imagePath: imagePath ?? this.imagePath,
       isActive: isActive ?? this.isActive,
     );
   }

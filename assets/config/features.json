@@ -1,0 +1,10 @@
+{
+  "homeEnabled": true,
+  "customersEnabled": false,
+  "productsEnabled": true,
+  "posEnabled": true,
+  "salesEnabled": true,
+  "reportsEnabled": false,
+  "inventoryEnabled": true,
+  "settingsEnabled": true
+}

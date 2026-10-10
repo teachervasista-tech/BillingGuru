@@ -1,13 +1,16 @@
 //import 'package:billing_guru/core/database/app_database.dart';
+import 'package:billing_guru/core/currency/currency_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app.dart';
 import 'core/database/database_initializer.dart';
 import 'core/database/app_database.dart';
+import 'core/config/app_features.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppFeatures.load();
 
   // Use this once only if the schema is old.
   //await AppDatabase.instance.deleteDatabaseForDevelopment();
@@ -15,7 +18,14 @@ Future<void> main() async {
   await initializeDatabase();
   await AppDatabase.instance.database;
 
-  runApp(ProviderScope(child: BillingGuru()));
+  final container = ProviderContainer();
+
+  await container.read(currencyProvider.notifier).loadSavedCurrency();
+
+  //runApp(ProviderScope(child: BillingGuru()));
+  runApp(
+    UncontrolledProviderScope(container: container, child: const BillingGuru()),
+  );
 }
 /*class BillingGuru extends StatelessWidget {
   const BillingGuru({super.key});

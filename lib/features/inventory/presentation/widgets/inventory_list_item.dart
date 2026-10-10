@@ -1,9 +1,11 @@
+import 'package:billing_guru/core/currency/currency_formatter.dart';
+import 'package:billing_guru/core/currency/currency_provider.dart';
+import 'package:billing_guru/core/ui/app_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/inventory_item.dart';
 import '../view_models/inventory_view_model.dart';
-import '../../../../core/ui/app_snackbar.dart';
 import 'stock_adjustment_dialog.dart';
 
 class InventoryListItem extends ConsumerWidget {
@@ -31,7 +33,7 @@ class InventoryListItem extends ConsumerWidget {
         ),
         subtitle: Text(
           'Barcode: ${item.barcode}\n'
-          'Price: ${_formatMoney(item.priceCents)}',
+          'Price: ${formatMoney(ref, item.priceCents)}',
         ),
         isThreeLine: true,
         trailing: SizedBox(
@@ -73,6 +75,12 @@ class InventoryListItem extends ConsumerWidget {
     );
   }
 
+  String formatMoney(WidgetRef ref, int cents) {
+    final currency = ref.watch(currencyProvider);
+
+    return CurrencyFormatter.formatCents(cents, currency: currency);
+  }
+
   Future<void> _adjustStock(BuildContext context, WidgetRef ref) async {
     final result = await showDialog<StockAdjustmentResult>(
       context: context,
@@ -109,9 +117,5 @@ class InventoryListItem extends ConsumerWidget {
     } else {
       AppSnackbar.error(context, 'Unable to update stock');
     }
-  }
-
-  String _formatMoney(int cents) {
-    return '€${(cents / 100).toStringAsFixed(2)}';
   }
 }
