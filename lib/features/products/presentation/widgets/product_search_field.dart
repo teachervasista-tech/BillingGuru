@@ -9,7 +9,11 @@ class ProductSearchField extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final productsAsync = ref.watch(productViewModelProvider);
+    final productsAsync = ref.watch(
+      productViewModelProvider.select(
+        (value) => value.whenData((state) => state.products),
+      ),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -30,7 +34,9 @@ class ProductSearchField extends ConsumerWidget {
               ),
             ),
             onChanged: (value) {
-              ref.read(productViewModelProvider.notifier).search(value);
+              ref
+                  .read(productViewModelProvider.notifier)
+                  .search(value, includeCatalogMeta: false);
             },
           ),
         ),
@@ -61,7 +67,7 @@ class ProductSearchField extends ConsumerWidget {
                         onPressed: () {
                           ref
                               .read(productViewModelProvider.notifier)
-                              .loadProducts();
+                              .loadProducts(includeCatalogMeta: false);
                         },
                         icon: const Icon(Icons.refresh),
                         label: const Text('Retry'),
@@ -71,8 +77,8 @@ class ProductSearchField extends ConsumerWidget {
                 ),
               );
             },
-            data: (productState) {
-              if (productState.products.isEmpty) {
+            data: (products) {
+              if (products.isEmpty) {
                 return const Center(child: Text('No products found'));
               }
 
@@ -80,15 +86,15 @@ class ProductSearchField extends ConsumerWidget {
                 onRefresh: () {
                   return ref
                       .read(productViewModelProvider.notifier)
-                      .loadProducts();
+                      .loadProducts(includeCatalogMeta: false);
                 },
                 child: ListView.builder(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.only(left: 8, right: 8, bottom: 16),
-                  itemCount: productState.products.length,
+                  itemCount: products.length,
                   itemBuilder: (context, index) {
                     return ProductListItem(
-                      product: productState.products[index],
+                      product: products[index],
                       showAddToCart: true,
                       showManagementActions: false,
                     );

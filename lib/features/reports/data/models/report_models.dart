@@ -61,11 +61,11 @@ class LowStockReport {
     required this.productId,
     required this.shortCode,
     required this.productName,
-    required this.stockQuantity,
+    required this.soldQuantity,
   });
 
   final String productId;
   final String shortCode;
   final String productName;
-  final int stockQuantity;
+  final int soldQuantity;
 }

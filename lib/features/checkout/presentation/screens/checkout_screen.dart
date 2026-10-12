@@ -59,64 +59,72 @@ class CheckoutScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Checkout')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  children: [
-                    const Icon(Icons.receipt_long, size: 64),
-                    const SizedBox(height: 12),
-                    const Text('Amount to pay'),
-                    const SizedBox(height: 8),
+      body: Center(
+        child: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.receipt_long, size: 64),
+                          const SizedBox(height: 12),
+                          const Text('Amount to pay'),
+                          const SizedBox(height: 8),
+                          Text(
+                            formatMoney(ref, cartViewModel.totalCents),
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed: cart.isEmpty || checkoutState.isSaving
+                        ? null
+                        : () {
+                            _completeCashSale(context, ref);
+                          },
+                    icon: checkoutState.isSaving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.money),
+                    label: const Text('Pay with cash'),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: cart.isEmpty || checkoutState.isSaving
+                        ? null
+                        : () {
+                            _completeCardSale(context, ref);
+                          },
+                    icon: const Icon(Icons.credit_card),
+                    label: const Text('Pay by card'),
+                  ),
+                  if (checkoutState.errorMessage != null) ...[
+                    const SizedBox(height: 16),
                     Text(
-                      formatMoney(ref, cartViewModel.totalCents),
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      checkoutState.errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.red),
                     ),
                   ],
-                ),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: cart.isEmpty || checkoutState.isSaving
-                  ? null
-                  : () {
-                      _completeCashSale(context, ref);
-                    },
-              icon: checkoutState.isSaving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.money),
-              label: const Text('Pay with cash'),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: cart.isEmpty || checkoutState.isSaving
-                  ? null
-                  : () {
-                      _completeCardSale(context, ref);
-                    },
-              icon: const Icon(Icons.credit_card),
-              label: const Text('Pay by card'),
-            ),
-            if (checkoutState.errorMessage != null) ...[
-              const SizedBox(height: 16),
-              Text(
-                checkoutState.errorMessage!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.red),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
       bottomNavigationBar: const CopyrightBanner(),

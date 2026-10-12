@@ -5,12 +5,14 @@ import '../../data/models/report_models.dart';
 class LowStockCard extends StatelessWidget {
   const LowStockCard({
     required this.products,
+    required this.periodLabel,
     this.limit = 20,
     super.key,
     currency,
   });
 
   final List<LowStockReport> products;
+  final String periodLabel;
   final int limit;
 
   @override
@@ -24,7 +26,7 @@ class LowStockCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Low-stock products',
+              'Slow-moving products',
               style: Theme.of(context).textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
@@ -33,7 +35,7 @@ class LowStockCard extends StatelessWidget {
               const SizedBox(
                 height: 120,
                 child: Center(
-                  child: Text('No products are below the stock threshold.'),
+                  child: Text('No low-selling products in this period.'),
                 ),
               )
             else
@@ -41,15 +43,25 @@ class LowStockCard extends StatelessWidget {
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(
-                    Icons.warning_amber_outlined,
+                    Icons.trending_down_outlined,
                     color: Colors.orange,
                   ),
                   title: Text(product.productName),
-                  subtitle: Text('Code: ${product.shortCode}'),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Code: ${product.shortCode}'),
+                      Text(
+                        product.soldQuantity == 0
+                            ? 'Not sold $periodLabel'
+                            : 'Sold ${product.soldQuantity} $periodLabel',
+                      ),
+                    ],
+                  ),
                   trailing: Text(
-                    '${product.stockQuantity} left',
+                    '${product.soldQuantity} sold',
                     style: TextStyle(
-                      color: product.stockQuantity <= 0
+                      color: product.soldQuantity == 0
                           ? Colors.red
                           : Colors.orange.shade800,
                       fontWeight: FontWeight.w700,

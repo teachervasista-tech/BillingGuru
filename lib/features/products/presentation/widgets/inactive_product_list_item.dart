@@ -17,6 +17,14 @@ class InactiveProductListItem extends ConsumerWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
+        onTap: () async {
+          await showDialog<bool>(
+            context: context,
+            builder: (context) {
+              return ProductFormDialog(product: product);
+            },
+          );
+        },
         leading: const CircleAvatar(child: Icon(Icons.inventory_2_outlined)),
         title: Text(
           product.name,
@@ -31,18 +39,6 @@ class InactiveProductListItem extends ConsumerWidget {
         trailing: Wrap(
           spacing: 4,
           children: [
-            IconButton(
-              tooltip: 'Edit product',
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () async {
-                await showDialog<bool>(
-                  context: context,
-                  builder: (context) {
-                    return ProductFormDialog(product: product);
-                  },
-                );
-              },
-            ),
             FilledButton.icon(
               icon: const Icon(Icons.restore),
               label: const Text('Reactivate'),

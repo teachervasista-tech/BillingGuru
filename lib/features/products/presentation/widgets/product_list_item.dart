@@ -54,7 +54,14 @@ class ProductListItem extends ConsumerWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: ListTile(
-        leading: ProductThumbnail(imagePath: product.imagePath, size: 56),
+        minTileHeight: 88,
+        titleAlignment: ListTileTitleAlignment.center,
+        onTap: showManagementActions ? () => _editProduct(context) : null,
+        leading: ProductThumbnail(
+          imagePath: product.imagePath,
+          width: 56,
+          height: 88,
+        ),
         title: Text(
           product.name,
           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -85,14 +92,6 @@ class ProductListItem extends ConsumerWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            if (showManagementActions)
-              IconButton(
-                tooltip: 'Edit product',
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: () {
-                  _editProduct(context);
-                },
-              ),
             if (showManagementActions)
               IconButton(
                 tooltip: 'Deactivate product',

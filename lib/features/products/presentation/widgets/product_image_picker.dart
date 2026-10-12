@@ -71,6 +71,7 @@ class _ProductImagePickerState extends State<ProductImagePicker> {
             Container(
               width: 128,
               height: 128,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
@@ -83,14 +84,14 @@ class _ProductImagePickerState extends State<ProductImagePicker> {
                   ? Image.file(
                       File(imagePath),
                       fit: BoxFit.cover,
+                      alignment: Alignment.center,
                       errorBuilder: (context, error, stackTrace) {
-                        return const Icon(
-                          Icons.broken_image_outlined,
-                          size: 36,
+                        return const Center(
+                          child: Icon(Icons.broken_image_outlined, size: 36),
                         );
                       },
                     )
-                  : const Icon(Icons.image_outlined, size: 36),
+                  : const Center(child: Icon(Icons.image_outlined, size: 36)),
             ),
             const SizedBox(width: 16),
             Column(

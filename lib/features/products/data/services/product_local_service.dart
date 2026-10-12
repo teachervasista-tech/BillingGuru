@@ -109,12 +109,18 @@ class ProductLocalService {
   }
 
   Future<Product?> getProductByBarcode(String barcode) async {
+    final normalizedBarcode = barcode.trim();
+
+    if (normalizedBarcode.isEmpty) {
+      return null;
+    }
+
     final db = await database.database;
 
     final rows = await db.query(
       'products',
       where: 'barcode = ? AND is_active = ?',
-      whereArgs: [barcode.trim(), 1],
+      whereArgs: [normalizedBarcode, 1],
       limit: 1,
     );
 
@@ -127,19 +133,20 @@ class ProductLocalService {
 
   Future<void> insertProduct(Product product) async {
     final db = await database.database;
+    final barcode = product.barcode.trim();
 
-    final existingProduct = await db.query(
-      'products',
-      columns: ['id'],
-      where: 'barcode = ?',
-      whereArgs: [product.barcode],
-      limit: 1,
-    );
-
-    if (existingProduct.isNotEmpty) {
-      throw Exception(
-        'A product with barcode ${product.barcode} already exists.',
+    if (barcode.isNotEmpty) {
+      final existingProduct = await db.query(
+        'products',
+        columns: ['id'],
+        where: 'barcode = ?',
+        whereArgs: [barcode],
+        limit: 1,
       );
+
+      if (existingProduct.isNotEmpty) {
+        throw Exception('A product with barcode $barcode already exists.');
+      }
     }
 
     await db.insert(
@@ -151,19 +158,20 @@ class ProductLocalService {
 
   Future<void> updateProduct(Product product) async {
     final db = await database.database;
+    final barcode = product.barcode.trim();
 
-    final duplicateBarcode = await db.query(
-      'products',
-      columns: ['id'],
-      where: 'barcode = ? AND id != ?',
-      whereArgs: [product.barcode, product.id],
-      limit: 1,
-    );
-
-    if (duplicateBarcode.isNotEmpty) {
-      throw Exception(
-        'A different product already uses barcode ${product.barcode}.',
+    if (barcode.isNotEmpty) {
+      final duplicateBarcode = await db.query(
+        'products',
+        columns: ['id'],
+        where: 'barcode = ? AND id != ?',
+        whereArgs: [barcode, product.id],
+        limit: 1,
       );
+
+      if (duplicateBarcode.isNotEmpty) {
+        throw Exception('A different product already uses barcode $barcode.');
+      }
     }
 
     final updatedRows = await db.update(

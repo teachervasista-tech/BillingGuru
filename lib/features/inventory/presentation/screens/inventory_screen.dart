@@ -14,6 +14,54 @@ class InventoryScreen extends ConsumerStatefulWidget {
   }
 }
 
+class _InventorySummaryCard extends StatelessWidget {
+  const _InventorySummaryCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: colorScheme.primary),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelSmall
+                    ?.copyWith(color: colorScheme.onSurfaceVariant),
+              ),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _InventoryScreenState extends ConsumerState<InventoryScreen> {
   late final TextEditingController _searchController;
 
@@ -59,59 +107,96 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'Inventory management',
-                    style: Theme.of(context).textTheme.headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            labelText: 'Search inventory',
-                            hintText: 'Search by name or barcode',
-                            prefixIcon: const Icon(Icons.search),
-                            suffixIcon: IconButton(
-                              tooltip: 'Clear search',
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final state = ref.watch(inventoryViewModelProvider).value;
+                      final totalStock = state == null
+                          ? 0
+                          : state.items.fold<int>(
+                              0,
+                              (total, item) => total + item.stockQuantity,
+                            );
+                      final itemCount = state?.items.length ?? 0;
 
-                                ref
-                                    .read(inventoryViewModelProvider.notifier)
-                                    .search('');
-                              },
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Inventory management',
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
-                          onChanged: (value) {
-                            ref
-                                .read(inventoryViewModelProvider.notifier)
-                                .search(value);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Consumer(
-                        builder: (context, ref, child) {
-                          final state = ref
-                              .watch(inventoryViewModelProvider)
-                              .value;
+                          const SizedBox(width: 12),
+                          _InventorySummaryCard(
+                            label: 'Items',
+                            value: '$itemCount',
+                            icon: Icons.inventory_2_outlined,
+                          ),
+                          const SizedBox(width: 12),
+                          _InventorySummaryCard(
+                            label: 'Total stock',
+                            value: '$totalStock',
+                            icon: Icons.widgets_outlined,
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final state = ref.watch(inventoryViewModelProvider).value;
+                      final lowStockOnly = state?.lowStockOnly ?? false;
 
-                          return FilterChip(
-                            label: const Text('Low stock only'),
-                            selected: state?.lowStockOnly ?? false,
-                            onSelected: (value) {
-                              ref
-                                  .read(inventoryViewModelProvider.notifier)
-                                  .setLowStockOnly(value);
-                            },
-                          );
+                      return TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          labelText: 'Search inventory',
+                          hintText: 'Search by name or barcode',
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                tooltip: lowStockOnly
+                                    ? 'Disable low stock filter'
+                                    : 'Enable low stock filter',
+                                onPressed: () {
+                                  ref
+                                      .read(inventoryViewModelProvider.notifier)
+                                      .setLowStockOnly(!lowStockOnly);
+                                },
+                                icon: Icon(
+                                  lowStockOnly
+                                      ? Icons.filter_alt
+                                      : Icons.filter_alt_outlined,
+                                  color: lowStockOnly
+                                      ? Theme.of(context).colorScheme.primary
+                                      : null,
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: 'Clear search',
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  _searchController.clear();
+
+                                  ref
+                                      .read(inventoryViewModelProvider.notifier)
+                                      .search('');
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        onChanged: (value) {
+                          ref
+                              .read(inventoryViewModelProvider.notifier)
+                              .search(value);
                         },
-                      ),
-                    ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
                   Expanded(

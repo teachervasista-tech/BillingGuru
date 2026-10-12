@@ -72,7 +72,10 @@ final reportProvider = FutureProvider.autoDispose
         to: period.to,
       );
 
-      final lowStockProducts = await service.getLowStockProducts();
+      final lowStockProducts = await service.getLowSellingProducts(
+        from: period.from,
+        to: period.to,
+      );
 
       return ReportData(
         summary: summary,

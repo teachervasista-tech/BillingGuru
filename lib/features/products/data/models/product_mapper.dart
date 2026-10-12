@@ -5,7 +5,7 @@ class ProductMapper {
     return Product(
       id: map['id'] as String,
       shortCode: map['short_code'] as String,
-      barcode: map['barcode'] as String,
+      barcode: map['barcode'] as String? ?? '',
       name: map['name'] as String,
       category: (map['category'] as String?) ?? 'Other',
       priceCents: map['price_cents'] as int,
@@ -20,7 +20,7 @@ class ProductMapper {
     return {
       'id': product.id,
       'short_code': product.shortCode,
-      'barcode': product.barcode,
+      'barcode': product.barcode.trim().isEmpty ? null : product.barcode.trim(),
       'name': product.name,
       'category': product.category,
       'image_path': product.imagePath,

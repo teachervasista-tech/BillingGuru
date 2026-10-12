@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,10 +22,15 @@ class CurrencyNotifier extends Notifier<AppCurrency> {
 
   Future<void> loadSavedCurrency() async {
     final prefs = await ref.read(sharedPreferencesProvider.future);
+    final configuredCode = (await rootBundle.loadString(
+      'assets/config/currency.txt',
+    )).trim();
 
-    final savedCode = prefs.getString(_currencyKey);
+    final savedCode = prefs.getString(_currencyKey)?.trim();
 
-    state = AppCurrency.fromCode(savedCode);
+    state = AppCurrency.fromCode(
+      savedCode == null || savedCode.isEmpty ? configuredCode : savedCode,
+    );
   }
 
   Future<void> selectCurrency(AppCurrency currency) async {

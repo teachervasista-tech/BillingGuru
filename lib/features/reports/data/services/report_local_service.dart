@@ -166,26 +166,47 @@ class ReportLocalService {
     }).toList();
   }
 
-  Future<List<LowStockReport>> getLowStockProducts({int threshold = 10}) async {
+  Future<List<LowStockReport>> getLowSellingProducts({
+    required DateTime from,
+    required DateTime to,
+    int limit = 10,
+  }) async {
     final db = await _database.database;
 
-    final rows = await db.query(
-      'products',
-      columns: ['id', 'short_code', 'name', 'stock_quantity'],
-      where: '''
-        is_active = ?
-        AND stock_quantity <= ?
+    final rows = await db.rawQuery(
+      '''
+      SELECT
+        p.id AS product_id,
+        p.short_code,
+        p.name AS product_name,
+        COALESCE(period_sales.sold_quantity, 0) AS sold_quantity
+      FROM products p
+      LEFT JOIN (
+        SELECT
+          si.product_id,
+          SUM(si.quantity) AS sold_quantity
+        FROM sale_items si
+        INNER JOIN sales s
+          ON s.id = si.sale_id
+        WHERE s.created_at >= ?
+          AND s.created_at < ?
+        GROUP BY si.product_id
+      ) period_sales
+        ON period_sales.product_id = p.id
+      WHERE p.is_active = ?
+      GROUP BY p.id, p.short_code, p.name, period_sales.sold_quantity
+      ORDER BY sold_quantity ASC, p.name COLLATE NOCASE ASC
+      LIMIT ?
       ''',
-      whereArgs: [1, threshold],
-      orderBy: 'stock_quantity ASC, name COLLATE NOCASE ASC',
+      [from.toIso8601String(), to.toIso8601String(), 1, limit],
     );
 
     return rows.map((row) {
       return LowStockReport(
-        productId: row['id'] as String,
+        productId: row['product_id'] as String,
         shortCode: row['short_code'] as String,
-        productName: row['name'] as String,
-        stockQuantity: row['stock_quantity'] as int,
+        productName: row['product_name'] as String,
+        soldQuantity: (row['sold_quantity'] as num?)?.toInt() ?? 0,
       );
     }).toList();
   }

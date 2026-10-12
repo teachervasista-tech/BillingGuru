@@ -6,6 +6,7 @@ import '../../../cart/domain/cart_item.dart';
 import '../../../cart/presentation/view_models/cart_view_model.dart';
 import '../../../sales/presentation/view_models/sales_view_model.dart';
 import '../../../dashboard/presentation/view_models/dashboard_view_model.dart';
+import '../../../reports/presentation/providers/report_providers.dart';
 import '../../data/repositories/checkout_repository.dart';
 import '../../domain/payment.dart';
 import '../../domain/sale.dart';
@@ -132,6 +133,7 @@ class CheckoutViewModel extends Notifier<CheckoutState> {
 
       ref.invalidate(dashboardViewModelProvider);
       ref.invalidate(salesViewModelProvider);
+      ref.invalidate(reportProvider);
 
       ref.read(cartProvider.notifier).clear();
 

@@ -7,7 +7,7 @@ class AppDatabase {
   static final AppDatabase instance = AppDatabase._internal();
 
   static const String _databaseName = 'pos_billing.db';
-  static const int _databaseVersion = 1;
+  static const int _databaseVersion = 2;
 
   Database? _database;
 
@@ -58,10 +58,22 @@ class AppDatabase {
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     await db.transaction((transaction) async {
       if (oldVersion < 2) {
-        await transaction.execute('''
-          ALTER TABLE products
-          ADD COLUMN category TEXT NOT NULL DEFAULT 'Other'
-        ''');
+        final columns = await transaction.rawQuery(
+          'PRAGMA table_info(products)',
+        );
+        final hasCategory = columns.any(
+          (column) => column['name'] == 'category',
+        );
+
+        if (!hasCategory) {
+          await transaction.execute('''
+            ALTER TABLE products
+            ADD COLUMN category TEXT NOT NULL DEFAULT 'Other'
+          ''');
+        }
+
+        await transaction.execute('PRAGMA defer_foreign_keys = ON');
+        await _makeBarcodeOptional(transaction);
       }
 
       if (oldVersion < 3) {
@@ -86,7 +98,7 @@ class AppDatabase {
     CREATE TABLE products (
       id TEXT PRIMARY KEY,
       short_code TEXT NOT NULL UNIQUE,
-      barcode TEXT NOT NULL UNIQUE,
+      barcode TEXT,
       name TEXT NOT NULL,
       category TEXT NOT NULL DEFAULT 'Other',
       image_path TEXT,
@@ -96,6 +108,49 @@ class AppDatabase {
       is_active INTEGER NOT NULL DEFAULT 1
     )
   ''');
+
+    await db.execute('''
+      CREATE UNIQUE INDEX idx_products_barcode_unique
+      ON products (barcode)
+      WHERE barcode IS NOT NULL AND barcode != ''
+    ''');
+  }
+
+  Future<void> _makeBarcodeOptional(Transaction transaction) async {
+    await transaction.execute('''
+      CREATE TABLE products_new (
+        id TEXT PRIMARY KEY,
+        short_code TEXT NOT NULL UNIQUE,
+        barcode TEXT,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'Other',
+        image_path TEXT,
+        price_cents INTEGER NOT NULL,
+        tax_rate INTEGER NOT NULL,
+        stock_quantity INTEGER NOT NULL,
+        is_active INTEGER NOT NULL DEFAULT 1
+      )
+    ''');
+
+    await transaction.execute('''
+      INSERT INTO products_new (
+        id, short_code, barcode, name, category, image_path,
+        price_cents, tax_rate, stock_quantity, is_active
+      )
+      SELECT
+        id, short_code, barcode, name, category, image_path,
+        price_cents, tax_rate, stock_quantity, is_active
+      FROM products
+    ''');
+
+    await transaction.execute('DROP TABLE products');
+    await transaction.execute('ALTER TABLE products_new RENAME TO products');
+    await transaction.execute('''
+      CREATE UNIQUE INDEX idx_products_barcode_unique
+      ON products (barcode)
+      WHERE barcode IS NOT NULL AND barcode != ''
+    ''');
+    await transaction.execute('PRAGMA defer_foreign_keys = OFF');
   }
 
   Future<void> _createSalesTable(Database db) async {

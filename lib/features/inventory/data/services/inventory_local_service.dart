@@ -131,7 +131,7 @@ class InventoryLocalService {
     return InventoryItem(
       productId: map['id'] as String,
       name: map['name'] as String,
-      barcode: map['barcode'] as String,
+      barcode: map['barcode'] as String? ?? '',
       stockQuantity: map['stock_quantity'] as int,
       priceCents: map['price_cents'] as int,
       isActive: (map['is_active'] as int) == 1,

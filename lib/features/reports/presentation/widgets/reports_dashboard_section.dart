@@ -50,7 +50,7 @@ class _ReportsDashboardSectionState
         return _ReportErrorCard(
           error: error,
           onRetry: () async {
-            await ref.refresh(reportProvider(filter).future);
+            final _ = await ref.refresh(reportProvider(filter).future);
           },
         );
       },
@@ -106,6 +106,7 @@ class _ReportsDashboardSectionState
             const SizedBox(height: 24),
             LowStockCard(
               products: report.lowStockProducts,
+              periodLabel: _selectedPeriodLabel,
               currency: selectedCurrency,
               limit: widget.compact ? 5 : 20,
             ),
@@ -113,6 +114,14 @@ class _ReportsDashboardSectionState
         );
       },
     );
+  }
+
+  String get _selectedPeriodLabel {
+    return switch (_periodType) {
+      ReportPeriodType.today => 'today',
+      ReportPeriodType.last7Days => 'in the last 7 days',
+      ReportPeriodType.thisMonth => 'this month',
+    };
   }
 }
 

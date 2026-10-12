@@ -71,6 +71,8 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
     String? searchText,
     String? selectedCategory,
     bool? showInactive,
+    bool includeCatalogMeta = true,
+    ProductState? previousState,
   }) async {
     final repository = ref.read(productRepositoryProvider);
 
@@ -83,12 +85,24 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
       category: currentCategory,
     );
 
-    final inactiveProducts = await repository.getInactiveProducts(
-      search: currentSearch,
-    );
+    if (!includeCatalogMeta) {
+      return (previousState ?? const ProductState()).copyWith(
+        products: activeProducts,
+        searchText: currentSearch,
+        selectedCategory: currentCategory,
+        showInactive: currentShowInactive,
+      );
+    }
 
-    final categories = await repository.getActiveCategories();
-    final categoryCounts = await repository.getActiveCategoryCounts();
+    final results = await Future.wait([
+      repository.getInactiveProducts(search: currentSearch),
+      repository.getActiveCategories(),
+      repository.getActiveCategoryCounts(),
+    ]);
+
+    final inactiveProducts = results[0] as List<Product>;
+    final categories = results[1] as List<String>;
+    final categoryCounts = results[2] as Map<String, int>;
 
     return ProductState(
       products: activeProducts,
@@ -101,7 +115,7 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
     );
   }
 
-  Future<void> loadProducts() async {
+  Future<void> loadProducts({bool includeCatalogMeta = true}) async {
     final currentState = state.value;
 
     state = await AsyncValue.guard(
@@ -109,11 +123,13 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
         searchText: currentState?.searchText,
         selectedCategory: currentState?.selectedCategory,
         showInactive: currentState?.showInactive,
+        includeCatalogMeta: includeCatalogMeta,
+        previousState: currentState,
       ),
     );
   }
 
-  Future<void> search(String value) async {
+  Future<void> search(String value, {bool includeCatalogMeta = true}) async {
     final currentState = state.value;
 
     state = await AsyncValue.guard(
@@ -121,6 +137,8 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
         searchText: value,
         selectedCategory: currentState?.selectedCategory,
         showInactive: currentState?.showInactive,
+        includeCatalogMeta: includeCatalogMeta,
+        previousState: currentState,
       ),
     );
   }
@@ -138,14 +156,20 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
   }
 
   Future<void> clearSearch() {
-    return search('');
+    return search('', includeCatalogMeta: false);
   }
 
   Future<void> setShowInactive(bool value) async {
-    final currentSearch = state.value?.searchText ?? '';
+    final currentState = state.value;
+    final currentSearch = currentState?.searchText ?? '';
+    final currentCategory = currentState?.selectedCategory;
 
     state = await AsyncValue.guard(
-      () => _loadState(searchText: currentSearch, showInactive: value),
+      () => _loadState(
+        searchText: currentSearch,
+        selectedCategory: currentCategory,
+        showInactive: value,
+      ),
     );
   }
 
@@ -248,6 +272,7 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
 
     final refreshedState = await _loadState(
       searchText: currentState?.searchText,
+      selectedCategory: currentState?.selectedCategory,
       showInactive: currentState?.showInactive,
     );
 

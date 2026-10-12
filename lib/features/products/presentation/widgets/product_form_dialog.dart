@@ -32,6 +32,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
   late final TextEditingController _shortCodeController;
 
   bool _isSaving = false;
+  bool _hasAddedProduct = false;
   String? _imagePath;
 
   @override
@@ -78,7 +79,23 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     super.dispose();
   }
 
-  Future<void> _saveProduct() async {
+  bool get _isBlankAddForm {
+    return _nameController.text.trim().isEmpty &&
+        _categoryController.text.trim().isEmpty &&
+        _shortCodeController.text.trim().isEmpty &&
+        _barcodeController.text.trim().isEmpty &&
+        _priceController.text.trim().isEmpty &&
+        _stockController.text.trim().isEmpty &&
+        _taxController.text.trim() == '19' &&
+        _imagePath == null;
+  }
+
+  Future<void> _saveProduct({bool closeAfterSave = false}) async {
+    if (closeAfterSave && _hasAddedProduct && _isBlankAddForm) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -135,7 +152,29 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     });
 
     if (success) {
-      Navigator.of(context).pop(true);
+      if (widget.isEditing) {
+        Navigator.of(context).pop(true);
+        return;
+      }
+
+      if (closeAfterSave) {
+        AppSnackbar.success(context, 'Product added successfully.');
+        Navigator.of(context).pop(true);
+        return;
+      }
+
+      _formKey.currentState?.reset();
+      _barcodeController.clear();
+      _nameController.clear();
+      _priceController.clear();
+      _stockController.clear();
+      _categoryController.clear();
+      _shortCodeController.clear();
+      setState(() {
+        _hasAddedProduct = true;
+        _imagePath = null;
+      });
+      AppSnackbar.success(context, 'Product added. Add another or close.');
       return;
     }
 
@@ -263,10 +302,23 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
                 TextFormField(
                   controller: _barcodeController,
                   decoration: const InputDecoration(
-                    labelText: 'Barcode',
+                    labelText: 'Barcode (optional)',
+                    hintText: 'Leave blank if not available',
                     prefixIcon: Icon(Icons.qr_code),
                   ),
-                  validator: _requiredValidator,
+                  validator: (value) {
+                    final barcode = value?.trim() ?? '';
+
+                    if (barcode.isEmpty) {
+                      return null;
+                    }
+
+                    if (barcode.length > 100) {
+                      return 'Barcode must be 100 characters or less.';
+                    }
+
+                    return null;
+                  },
                   textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 12),
@@ -320,10 +372,18 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
           onPressed: _isSaving
               ? null
               : () {
-                  Navigator.of(context).pop(false);
+                  Navigator.of(context).pop(_hasAddedProduct);
                 },
-          child: const Text('Cancel'),
+          child: Text(_hasAddedProduct ? 'Close' : 'Cancel'),
         ),
+        if (!widget.isEditing)
+          OutlinedButton.icon(
+            onPressed: _isSaving
+                ? null
+                : () => _saveProduct(closeAfterSave: true),
+            icon: const Icon(Icons.save),
+            label: const Text('Save and close'),
+          ),
         FilledButton.icon(
           onPressed: _isSaving ? null : _saveProduct,
           icon: _isSaving
@@ -332,8 +392,8 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Icon(Icons.save),
-          label: Text(widget.isEditing ? 'Update' : 'Save'),
+              : Icon(widget.isEditing ? Icons.save : Icons.add),
+          label: Text(widget.isEditing ? 'Update' : 'Add more products'),
         ),
       ],
     );

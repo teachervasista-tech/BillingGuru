@@ -73,13 +73,6 @@ class AppNavigationShell extends StatelessWidget {
         icon: Icon(Icons.dashboard_outlined),
         selectedIcon: Icon(Icons.dashboard),
       ),
-      if (AppFeatures.instance.productsEnabled)
-        const _NavigationItem(
-          label: 'Products',
-          route: '/products',
-          icon: Icon(Icons.inventory_2_outlined),
-          selectedIcon: Icon(Icons.inventory_2),
-        ),
       if (AppFeatures.instance.posEnabled)
         const _NavigationItem(
           label: 'PoS',
@@ -87,6 +80,13 @@ class AppNavigationShell extends StatelessWidget {
           icon: Icon(Icons.point_of_sale_outlined),
           selectedIcon: Icon(Icons.point_of_sale),
           additionalPaths: ['/checkout'],
+        ),
+      if (AppFeatures.instance.productsEnabled)
+        const _NavigationItem(
+          label: 'Products',
+          route: '/products',
+          icon: Icon(Icons.inventory_2_outlined),
+          selectedIcon: Icon(Icons.inventory_2),
         ),
       if (AppFeatures.instance.customersEnabled)
         const _NavigationItem(

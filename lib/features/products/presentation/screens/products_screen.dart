@@ -6,7 +6,6 @@ import '../view_models/product_view_model.dart';
 import '../widgets/inactive_product_list_item.dart';
 import '../widgets/product_form_dialog.dart';
 import '../widgets/product_list_item.dart';
-import '../../../../core/ui/app_snackbar.dart';
 
 class ProductsScreen extends ConsumerStatefulWidget {
   const ProductsScreen({super.key});
@@ -65,9 +64,9 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildHeader(context, ref),
+                  _buildHeader(context, productsAsync.asData?.value),
                   const SizedBox(height: 16),
-                  _buildSearchAndFilterRow(ref),
+                  _buildSearchAndFilterRow(ref, productsAsync.asData?.value),
                   const SizedBox(height: 16),
                   Expanded(
                     child: _buildProductBody(context, ref, productsAsync),
@@ -82,14 +81,30 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, WidgetRef ref) {
+  Widget _buildHeader(BuildContext context, ProductState? productState) {
+    final productCount = productState == null
+        ? null
+        : (_showInactive
+              ? productState.inactiveProducts.length
+              : productState.products.length);
+
     return Row(
       children: [
         Expanded(
-          child: Text(
-            'Product catalog',
-            style: Theme.of(context).textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Product catalog',
+                style: Theme.of(context).textTheme.headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              if (productCount != null)
+                Text(
+                  '$productCount products',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+            ],
           ),
         ),
         FilledButton.icon(
@@ -103,7 +118,19 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     );
   }
 
-  Widget _buildSearchAndFilterRow(WidgetRef ref) {
+  Widget _buildSearchAndFilterRow(WidgetRef ref, ProductState? productState) {
+    final categories = productState?.categories ?? const <String>[];
+    final selectedCategory = productState?.selectedCategory;
+    final categoryValue = categories.contains(selectedCategory)
+        ? selectedCategory!
+        : '';
+    final totalProducts =
+        productState?.categoryCounts.values.fold<int>(
+          0,
+          (sum, count) => sum + count,
+        ) ??
+        0;
+
     return Row(
       children: [
         Expanded(
@@ -126,6 +153,40 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
             onChanged: (value) {
               ref.read(productViewModelProvider.notifier).search(value);
             },
+          ),
+        ),
+        const SizedBox(width: 16),
+        SizedBox(
+          width: 240,
+          child: DropdownButtonFormField<String>(
+            key: ValueKey(categoryValue),
+            initialValue: categoryValue,
+            decoration: const InputDecoration(
+              labelText: 'Category',
+              prefixIcon: Icon(Icons.category_outlined),
+            ),
+            items: [
+              DropdownMenuItem(
+                value: '',
+                child: Text('All categories ($totalProducts)'),
+              ),
+              ...categories.map((category) {
+                final count = productState?.categoryCounts[category] ?? 0;
+                return DropdownMenuItem(
+                  value: category,
+                  child: Text('$category ($count)'),
+                );
+              }),
+            ],
+            onChanged: categories.isEmpty
+                ? null
+                : (value) {
+                    ref
+                        .read(productViewModelProvider.notifier)
+                        .selectCategory(
+                          value == null || value.isEmpty ? null : value,
+                        );
+                  },
           ),
         ),
         const SizedBox(width: 16),
@@ -169,17 +230,6 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _ProductCategorySummary(
-              categories: productState.categories,
-              categoryCounts: productState.categoryCounts,
-              selectedCategory: productState.selectedCategory,
-              onCategorySelected: (category) {
-                ref
-                    .read(productViewModelProvider.notifier)
-                    .selectCategory(category);
-              },
-            ),
-            const SizedBox(height: 12),
             Expanded(
               child: products.isEmpty
                   ? Center(
@@ -196,6 +246,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                             .loadProducts();
                       },
                       child: ListView.builder(
+                        padding: const EdgeInsets.only(right: 16),
                         physics: const AlwaysScrollableScrollPhysics(),
                         itemCount: products.length,
                         itemBuilder: (context, index) {
@@ -221,20 +272,12 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
   }
 
   Future<void> _showAddProductDialog(BuildContext context) async {
-    final added = await showDialog<bool>(
+    await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return const ProductFormDialog();
       },
     );
-
-    if (!context.mounted) {
-      return;
-    }
-
-    if (added == true) {
-      AppSnackbar.success(context, 'Product added successfully');
-    }
   }
 }
 
@@ -260,59 +303,6 @@ class _ErrorView extends StatelessWidget {
             label: const Text('Retry'),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ProductCategorySummary extends StatelessWidget {
-  const _ProductCategorySummary({
-    required this.categories,
-    required this.categoryCounts,
-    required this.selectedCategory,
-    required this.onCategorySelected,
-  });
-
-  final List<String> categories;
-  final Map<String, int> categoryCounts;
-  final String? selectedCategory;
-  final ValueChanged<String?> onCategorySelected;
-
-  @override
-  Widget build(BuildContext context) {
-    if (categories.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            ChoiceChip(
-              label: Text(
-                'All (${categoryCounts.values.fold<int>(0, (sum, count) => sum + count)})',
-              ),
-              selected: selectedCategory == null,
-              onSelected: (_) {
-                onCategorySelected(null);
-              },
-            ),
-            ...categories.map((category) {
-              final count = categoryCounts[category] ?? 0;
-
-              return ChoiceChip(
-                label: Text('$category ($count)'),
-                selected: selectedCategory == category,
-                onSelected: (_) {
-                  onCategorySelected(category);
-                },
-              );
-            }),
-          ],
-        ),
       ),
     );
   }

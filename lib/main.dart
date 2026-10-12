@@ -20,7 +20,10 @@ Future<void> main() async {
 
   final container = ProviderContainer();
 
-  await container.read(currencyProvider.notifier).loadSavedCurrency();
+  await Future.wait([
+    container.read(currencyProvider.notifier).loadSavedCurrency(),
+    AppDatabase.instance.database,
+  ]);
 
   //runApp(ProviderScope(child: BillingGuru()));
   runApp(

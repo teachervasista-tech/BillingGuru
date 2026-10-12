@@ -25,7 +25,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     super.initState();
 
     Future.microtask(() {
-      ref.read(productViewModelProvider.notifier).loadProducts();
+      ref
+          .read(productViewModelProvider.notifier)
+          .loadProducts(includeCatalogMeta: false);
     });
   }
 

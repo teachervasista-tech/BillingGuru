@@ -86,7 +86,10 @@ flutter:
     - assets/icons/
     - assets/images/
     - assets/images/navigation/
+    - assets/text/
+    - assets/text/home_placeholder.txt
     - assets/config/features.json
+    - assets/config/currency.txt
   # e.g., if you bundle a local DB:
   # - assets/db/billing_guru.db
 
