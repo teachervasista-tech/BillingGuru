@@ -84,6 +84,7 @@ void main() {
     expect(find.text('Coffee beans'), findsOneWidget);
     expect(find.text('Pasta'), findsOneWidget);
     expect(find.text('All (2)'), findsOneWidget);
+    expect(find.byTooltip('Edit product'), findsNWidgets(2));
 
     await tester.tap(find.text('Food (1)'));
     await tester.pumpAndSettle();

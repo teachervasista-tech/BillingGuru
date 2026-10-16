@@ -67,15 +67,6 @@ class ProductListItem extends ConsumerWidget {
           spacing: 4,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: colorScheme.primaryContainer,
-              child: Icon(
-                Icons.inventory_2,
-                size: 18,
-                color: colorScheme.onPrimaryContainer,
-              ),
-            ),
             Text(
               formatMoney(ref, product.priceCents),
               style: TextStyle(
@@ -83,6 +74,14 @@ class ProductListItem extends ConsumerWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
+            if (showManagementActions)
+              IconButton(
+                tooltip: 'Edit product',
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: () {
+                  _editProduct(context);
+                },
+              ),
             if (showManagementActions)
               IconButton(
                 tooltip: 'Deactivate product',
@@ -93,14 +92,13 @@ class ProductListItem extends ConsumerWidget {
                 },
               ),
             if (showAddToCart)
-              FilledButton.icon(
+              FilledButton(
                 onPressed: isOutOfStock
                     ? null
                     : () {
                         ref.read(cartProvider.notifier).addProduct(product);
                       },
-                icon: const Icon(Icons.add_shopping_cart, size: 16),
-                label: const Text('Add'),
+                child: const Text('Add'),
               ),
           ],
         ),
