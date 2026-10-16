@@ -66,7 +66,11 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                 children: [
                   _buildHeader(context, productsAsync.asData?.value),
                   const SizedBox(height: 16),
-                  _buildSearchAndFilterRow(ref, productsAsync.asData?.value),
+                  _buildSearchAndFilterRow(ref),
+                  if (!_showInactive && productsAsync.asData != null) ...[
+                    const SizedBox(height: 12),
+                    _buildCategoryTabs(ref, productsAsync.asData!.value),
+                  ],
                   const SizedBox(height: 16),
                   Expanded(
                     child: _buildProductBody(context, ref, productsAsync),
@@ -118,90 +122,95 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     );
   }
 
-  Widget _buildSearchAndFilterRow(WidgetRef ref, ProductState? productState) {
-    final categories = productState?.categories ?? const <String>[];
-    final selectedCategory = productState?.selectedCategory;
-    final categoryValue = categories.contains(selectedCategory)
-        ? selectedCategory!
-        : '';
-    final totalProducts =
-        productState?.categoryCounts.values.fold<int>(
-          0,
-          (sum, count) => sum + count,
-        ) ??
-        0;
-
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              labelText: 'Search products',
-              hintText: 'Search by name or barcode',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: IconButton(
-                tooltip: 'Clear search',
-                icon: const Icon(Icons.clear),
-                onPressed: () {
-                  _searchController.clear();
-
-                  ref.read(productViewModelProvider.notifier).clearSearch();
-                },
-              ),
-            ),
-            onChanged: (value) {
-              ref.read(productViewModelProvider.notifier).search(value);
-            },
-          ),
-        ),
-        const SizedBox(width: 16),
-        SizedBox(
-          width: 240,
-          child: DropdownButtonFormField<String>(
-            key: ValueKey(categoryValue),
-            initialValue: categoryValue,
-            decoration: const InputDecoration(
-              labelText: 'Category',
-              prefixIcon: Icon(Icons.category_outlined),
-            ),
-            items: [
-              DropdownMenuItem(
-                value: '',
-                child: Text('All categories ($totalProducts)'),
-              ),
-              ...categories.map((category) {
-                final count = productState?.categoryCounts[category] ?? 0;
-                return DropdownMenuItem(
-                  value: category,
-                  child: Text('$category ($count)'),
-                );
-              }),
-            ],
-            onChanged: categories.isEmpty
-                ? null
-                : (value) {
-                    ref
-                        .read(productViewModelProvider.notifier)
-                        .selectCategory(
-                          value == null || value.isEmpty ? null : value,
-                        );
-                  },
-          ),
-        ),
-        const SizedBox(width: 16),
-        FilterChip(
-          label: const Text('Inactive products'),
-          selected: _showInactive,
-          onSelected: (value) {
-            setState(() {
-              _showInactive = value;
-            });
-
-            ref.read(productViewModelProvider.notifier).setShowInactive(value);
+  Widget _buildSearchAndFilterRow(WidgetRef ref) {
+    final searchField = TextField(
+      controller: _searchController,
+      decoration: InputDecoration(
+        labelText: 'Search products',
+        hintText: 'Search by name or barcode',
+        prefixIcon: const Icon(Icons.search),
+        suffixIcon: IconButton(
+          tooltip: 'Clear search',
+          icon: const Icon(Icons.clear),
+          onPressed: () {
+            _searchController.clear();
+            ref.read(productViewModelProvider.notifier).clearSearch();
           },
         ),
-      ],
+      ),
+      onChanged: (value) {
+        ref.read(productViewModelProvider.notifier).search(value);
+      },
+    );
+    final inactiveFilter = FilterChip(
+      label: const Text('Inactive products'),
+      selected: _showInactive,
+      onSelected: (value) {
+        setState(() {
+          _showInactive = value;
+        });
+
+        ref.read(productViewModelProvider.notifier).setShowInactive(value);
+      },
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 640) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              searchField,
+              Align(alignment: Alignment.centerLeft, child: inactiveFilter),
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: searchField),
+            const SizedBox(width: 16),
+            inactiveFilter,
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCategoryTabs(WidgetRef ref, ProductState productState) {
+    final categories = productState.categories;
+    final selectedIndex = categories.indexOf(
+      productState.selectedCategory ?? '',
+    );
+    final initialIndex = selectedIndex < 0 ? 0 : selectedIndex + 1;
+    final totalProducts = productState.categoryCounts.values.fold<int>(
+      0,
+      (sum, count) => sum + count,
+    );
+    final tabKey = ValueKey(
+      '${categories.join('\u0000')}\u0001${productState.selectedCategory ?? ''}',
+    );
+
+    return DefaultTabController(
+      key: tabKey,
+      length: categories.length + 1,
+      initialIndex: initialIndex,
+      child: TabBar(
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
+        tabs: [
+          Tab(text: 'All ($totalProducts)'),
+          ...categories.map((category) {
+            final count = productState.categoryCounts[category] ?? 0;
+            return Tab(text: '$category ($count)');
+          }),
+        ],
+        onTap: (index) {
+          ref
+              .read(productViewModelProvider.notifier)
+              .selectCategory(index == 0 ? null : categories[index - 1]);
+        },
+      ),
     );
   }
 

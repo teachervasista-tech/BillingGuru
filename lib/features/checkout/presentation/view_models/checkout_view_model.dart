@@ -99,6 +99,7 @@ class CheckoutViewModel extends Notifier<CheckoutState> {
           id: _uuid.v4(),
           saleId: saleId,
           productId: cartItem.product.id,
+          productName: cartItem.product.name,
           quantity: cartItem.quantity,
           unitPriceCents: cartItem.product.priceCents,
           totalCents: cartItem.totalCents,

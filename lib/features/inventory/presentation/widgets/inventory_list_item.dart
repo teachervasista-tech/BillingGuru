@@ -1,6 +1,5 @@
 import 'package:billing_guru/core/currency/currency_formatter.dart';
 import 'package:billing_guru/core/currency/currency_provider.dart';
-import 'package:billing_guru/core/ui/app_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -98,24 +97,16 @@ class InventoryListItem extends ConsumerWidget {
 
     final viewModel = ref.read(inventoryViewModelProvider.notifier);
 
-    final success = result.isIncrease
-        ? await viewModel.increaseStock(
-            productId: item.productId,
-            quantity: result.quantity,
-          )
-        : await viewModel.decreaseStock(
-            productId: item.productId,
-            quantity: result.quantity,
-          );
-
-    if (!context.mounted) {
-      return;
-    }
-
-    if (success) {
-      AppSnackbar.success(context, 'Stock updated successfully');
+    if (result.isIncrease) {
+      await viewModel.increaseStock(
+        productId: item.productId,
+        quantity: result.quantity,
+      );
     } else {
-      AppSnackbar.error(context, 'Unable to update stock');
+      await viewModel.decreaseStock(
+        productId: item.productId,
+        quantity: result.quantity,
+      );
     }
   }
 }

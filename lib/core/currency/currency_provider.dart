@@ -13,31 +13,16 @@ final currencyProvider = NotifierProvider<CurrencyNotifier, AppCurrency>(
 );
 
 class CurrencyNotifier extends Notifier<AppCurrency> {
-  static const String _currencyKey = 'app_currency_code';
-
   @override
   AppCurrency build() {
     return AppCurrency.eur;
   }
 
-  Future<void> loadSavedCurrency() async {
-    final prefs = await ref.read(sharedPreferencesProvider.future);
+  Future<void> loadCurrencyFromAsset() async {
     final configuredCode = (await rootBundle.loadString(
       'assets/config/currency.txt',
     )).trim();
 
-    final savedCode = prefs.getString(_currencyKey)?.trim();
-
-    state = AppCurrency.fromCode(
-      savedCode == null || savedCode.isEmpty ? configuredCode : savedCode,
-    );
-  }
-
-  Future<void> selectCurrency(AppCurrency currency) async {
-    state = currency;
-
-    final prefs = await ref.read(sharedPreferencesProvider.future);
-
-    await prefs.setString(_currencyKey, currency.code);
+    state = AppCurrency.fromCode(configuredCode);
   }
 }

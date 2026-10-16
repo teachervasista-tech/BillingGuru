@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/product.dart';
 import '../view_models/product_view_model.dart';
-import '../../../../core/ui/app_snackbar.dart';
 import 'confirm_product_activation_dialog.dart';
 import 'product_form_dialog.dart';
 
@@ -62,18 +61,8 @@ class InactiveProductListItem extends ConsumerWidget {
       return;
     }
 
-    final success = await ref
+    await ref
         .read(productViewModelProvider.notifier)
         .activateProduct(product.id);
-
-    if (!context.mounted) {
-      return;
-    }
-
-    if (success) {
-      AppSnackbar.success(context, '${product.name} was reactivated');
-    } else {
-      AppSnackbar.error(context, 'Unable to reactivate product');
-    }
   }
 }

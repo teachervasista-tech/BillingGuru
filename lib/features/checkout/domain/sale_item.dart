@@ -6,6 +6,7 @@ class SaleItem {
     required this.quantity,
     required this.unitPriceCents,
     required this.totalCents,
+    this.productName,
   });
 
   final String id;
@@ -14,4 +15,5 @@ class SaleItem {
   final int quantity;
   final int unitPriceCents;
   final int totalCents;
+  final String? productName;
 }

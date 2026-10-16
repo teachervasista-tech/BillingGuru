@@ -57,9 +57,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
           Expanded(
             child: Row(
               children: [
-                const Expanded(flex: 5, child: _ProductsPanel()),
+                const Expanded(flex: 7, child: _ProductsPanel()),
                 const VerticalDivider(width: 1, thickness: 1),
-                Expanded(flex: 5, child: _CartPanel(cart: cart)),
+                Expanded(flex: 3, child: _CartPanel(cart: cart)),
               ],
             ),
           ),

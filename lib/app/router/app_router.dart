@@ -9,6 +9,7 @@ import '../../features/inventory/presentation/screens/inventory_screen.dart';
 import '../../features/cart/presentation/screens/pos_screen.dart';
 import '../../features/checkout/presentation/screens/checkout_screen.dart';
 import '../../features/reports/presentation/screens/reports_screen.dart';
+import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../core/config/app_features.dart';
 import '../screens/placeholder_screen.dart';
@@ -121,10 +122,7 @@ final GoRouter appRouter = GoRouter(
           path: '/settings',
           name: 'settings',
           builder: (context, state) {
-            return const PlaceholderScreen(
-              title: 'Settings',
-              icon: Icons.people,
-            );
+            return const SettingsScreen();
           },
         ),
         GoRoute(

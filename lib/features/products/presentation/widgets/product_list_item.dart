@@ -1,6 +1,5 @@
 import 'package:billing_guru/core/currency/currency_formatter.dart';
 import 'package:billing_guru/core/currency/currency_provider.dart';
-import 'package:billing_guru/core/ui/app_snackbar.dart';
 import 'package:billing_guru/features/products/presentation/widgets/product_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,20 +29,12 @@ class ProductListItem extends ConsumerWidget {
   }
 
   Future<void> _editProduct(BuildContext context) async {
-    final updated = await showDialog<bool>(
+    await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return ProductFormDialog(product: product);
       },
     );
-
-    if (!context.mounted) {
-      return;
-    }
-
-    if (updated == true) {
-      AppSnackbar.success(context, 'Product updated successfully');
-    }
   }
 
   @override
@@ -107,11 +98,6 @@ class ProductListItem extends ConsumerWidget {
                     ? null
                     : () {
                         ref.read(cartProvider.notifier).addProduct(product);
-
-                        AppSnackbar.success(
-                          context,
-                          '${product.name} added to cart',
-                        );
                       },
                 icon: const Icon(Icons.add_shopping_cart, size: 16),
                 label: const Text('Add'),
@@ -132,32 +118,8 @@ class ProductListItem extends ConsumerWidget {
       return;
     }
 
-    final success = await ref
+    await ref
         .read(productViewModelProvider.notifier)
         .deactivateProduct(product.id);
-
-    if (!context.mounted) {
-      return;
-    }
-
-    if (success) {
-      AppSnackbar.success(
-        context,
-        '${product.name} was deactivated',
-        actionLabel: 'UNDO',
-        onAction: () {
-          ref
-              .read(productViewModelProvider.notifier)
-              .activateProduct(product.id);
-        },
-      );
-    } else {
-      final error = ref.read(productViewModelProvider).error;
-
-      AppSnackbar.error(
-        context,
-        error?.toString() ?? 'Unable to deactivate product.',
-      );
-    }
   }
 }

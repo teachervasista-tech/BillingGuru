@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('loads the default currency code from the text asset', () async {
+  test('loads the currency code from the text asset', () async {
     SharedPreferences.setMockInitialValues({});
     final configuredCode = (await rootBundle.loadString(
       'assets/config/currency.txt',
@@ -15,18 +15,24 @@ void main() {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
-    await container.read(currencyProvider.notifier).loadSavedCurrency();
+    await container.read(currencyProvider.notifier).loadCurrencyFromAsset();
 
     expect(container.read(currencyProvider).code, configuredCode);
   });
 
-  test('uses the saved Settings currency over the text-file default', () async {
-    SharedPreferences.setMockInitialValues({'app_currency_code': 'USD'});
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
+  test(
+    'asset currency takes precedence over a previously saved preference',
+    () async {
+      SharedPreferences.setMockInitialValues({'app_currency_code': 'USD'});
+      final configuredCode = (await rootBundle.loadString(
+        'assets/config/currency.txt',
+      )).trim();
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
 
-    await container.read(currencyProvider.notifier).loadSavedCurrency();
+      await container.read(currencyProvider.notifier).loadCurrencyFromAsset();
 
-    expect(container.read(currencyProvider).code, 'USD');
-  });
+      expect(container.read(currencyProvider).code, configuredCode);
+    },
+  );
 }

@@ -7,6 +7,8 @@ import 'app/app.dart';
 import 'core/database/database_initializer.dart';
 import 'core/database/app_database.dart';
 import 'core/config/app_features.dart';
+import 'core/printing/receipt_template_provider.dart';
+import 'core/tax/tax_rate_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,7 +23,9 @@ Future<void> main() async {
   final container = ProviderContainer();
 
   await Future.wait([
-    container.read(currencyProvider.notifier).loadSavedCurrency(),
+    container.read(currencyProvider.notifier).loadCurrencyFromAsset(),
+    container.read(receiptTemplateProvider.notifier).loadSavedTemplate(),
+    container.read(defaultTaxRateProvider.notifier).loadSavedTaxRate(),
     AppDatabase.instance.database,
   ]);
 

@@ -90,6 +90,7 @@ flutter:
     - assets/text/home_placeholder.txt
     - assets/config/features.json
     - assets/config/currency.txt
+    - assets/config/receipt_business_details.txt
   # e.g., if you bundle a local DB:
   # - assets/db/billing_guru.db
 

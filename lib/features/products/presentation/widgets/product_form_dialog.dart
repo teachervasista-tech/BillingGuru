@@ -1,10 +1,10 @@
 import 'package:billing_guru/core/storage/product_image_storage.dart';
+import 'package:billing_guru/core/tax/tax_rate_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/product.dart';
 import '../view_models/product_view_model.dart';
-import '../../../../core/ui/app_snackbar.dart';
 import 'product_image_picker.dart';
 
 class ProductFormDialog extends ConsumerStatefulWidget {
@@ -54,7 +54,9 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     );
 
     _taxController = TextEditingController(
-      text: product?.taxRate.toString() ?? '19',
+      text:
+          product?.taxRate.toString() ??
+          ref.read(defaultTaxRateProvider).toString(),
     );
 
     _stockController = TextEditingController(
@@ -86,7 +88,8 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
         _barcodeController.text.trim().isEmpty &&
         _priceController.text.trim().isEmpty &&
         _stockController.text.trim().isEmpty &&
-        _taxController.text.trim() == '19' &&
+        _taxController.text.trim() ==
+            ref.read(defaultTaxRateProvider).toString() &&
         _imagePath == null;
   }
 
@@ -158,7 +161,6 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
       }
 
       if (closeAfterSave) {
-        AppSnackbar.success(context, 'Product added successfully.');
         Navigator.of(context).pop(true);
         return;
       }
@@ -167,6 +169,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
       _barcodeController.clear();
       _nameController.clear();
       _priceController.clear();
+      _taxController.text = ref.read(defaultTaxRateProvider).toString();
       _stockController.clear();
       _categoryController.clear();
       _shortCodeController.clear();
@@ -174,13 +177,11 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
         _hasAddedProduct = true;
         _imagePath = null;
       });
-      AppSnackbar.success(context, 'Product added. Add another or close.');
       return;
     }
 
     final error = ref.read(productViewModelProvider).error;
-
-    AppSnackbar.error(context, error?.toString() ?? 'Unable to save product.');
+    debugPrint('Unable to save product: ${error ?? 'Unknown error'}');
   }
 
   int _parsePriceToCents(String value) {

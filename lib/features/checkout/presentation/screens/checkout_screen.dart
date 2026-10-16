@@ -3,6 +3,7 @@ import 'package:billing_guru/core/currency/currency_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../app/widgets/copyright_banner.dart';
 import '../../../cart/presentation/view_models/cart_view_model.dart';
@@ -56,6 +57,8 @@ class CheckoutScreen extends ConsumerWidget {
     final cart = ref.watch(cartProvider);
     final cartViewModel = ref.read(cartProvider.notifier);
     final checkoutState = ref.watch(checkoutViewModelProvider);
+    final checkoutDateTime = DateFormat('dd MMM yyyy, HH:mm')
+        .format(DateTime.now());
 
     return Scaffold(
       appBar: AppBar(title: const Text('Checkout')),
@@ -71,17 +74,69 @@ class CheckoutScreen extends ConsumerWidget {
                 children: [
                   Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(20),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Icon(Icons.receipt_long, size: 64),
-                          const SizedBox(height: 12),
-                          const Text('Amount to pay'),
-                          const SizedBox(height: 8),
                           Text(
-                            formatMoney(ref, cartViewModel.totalCents),
-                            style: Theme.of(context).textTheme.headlineSmall
+                            'Order summary',
+                            style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Text('Date and time: $checkoutDateTime'),
+                          const Divider(height: 24),
+                          if (cart.isEmpty)
+                            const Text('No items in cart')
+                          else
+                            ...cart.map(
+                              (item) => Padding(
+                                padding: const EdgeInsets.only(bottom: 14),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.product.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            '${item.quantity} x ${formatMoney(ref, item.product.priceCents)}',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall,
+                                          ),
+                                        ),
+                                        Text(formatMoney(ref, item.totalCents)),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          const Divider(height: 16),
+                          _CheckoutAmountRow(
+                            label: 'Subtotal',
+                            amount: formatMoney(
+                              ref,
+                              cartViewModel.subtotalCents,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _CheckoutAmountRow(
+                            label: 'Tax',
+                            amount: formatMoney(ref, cartViewModel.taxCents),
+                          ),
+                          const Divider(height: 24),
+                          _CheckoutAmountRow(
+                            label: 'Total',
+                            amount: formatMoney(ref, cartViewModel.totalCents),
+                            emphasized: true,
                           ),
                         ],
                       ),
@@ -128,6 +183,33 @@ class CheckoutScreen extends ConsumerWidget {
         ),
       ),
       bottomNavigationBar: const CopyrightBanner(),
+    );
+  }
+}
+
+class _CheckoutAmountRow extends StatelessWidget {
+  const _CheckoutAmountRow({
+    required this.label,
+    required this.amount,
+    this.emphasized = false,
+  });
+
+  final String label;
+  final String amount;
+  final bool emphasized;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = emphasized
+        ? Theme.of(context).textTheme.titleMedium
+              ?.copyWith(fontWeight: FontWeight.bold)
+        : Theme.of(context).textTheme.bodyMedium;
+
+    return Row(
+      children: [
+        Expanded(child: Text(label, style: style)),
+        Text(amount, style: style),
+      ],
     );
   }
 }
