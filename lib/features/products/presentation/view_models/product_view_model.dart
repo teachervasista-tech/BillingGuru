@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/database/app_database.dart';
 import '../../data/models/product.dart';
 import '../../data/repositories/product_repository.dart';
+import '../../data/services/product_import.dart';
 import '../../data/services/product_local_service.dart';
 
 final productRepositoryProvider = Provider<ProductRepository>((ref) {
@@ -115,8 +116,11 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
     );
   }
 
-  Future<void> loadProducts({bool includeCatalogMeta = true}) async {
-    final currentState = state.value;
+  Future<void> loadProducts({
+    bool includeCatalogMeta = true,
+    bool resetFilters = false,
+  }) async {
+    final currentState = resetFilters ? null : state.value;
 
     state = await AsyncValue.guard(
       () => _loadState(
@@ -124,7 +128,7 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
         selectedCategory: currentState?.selectedCategory,
         showInactive: currentState?.showInactive,
         includeCatalogMeta: includeCatalogMeta,
-        previousState: currentState,
+        previousState: state.value,
       ),
     );
   }
@@ -265,6 +269,30 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
       state = AsyncValue.error(error, stackTrace);
       return false;
     }
+  }
+
+  /// Adds each product, skipping (and reporting) the ones the database rejects
+  /// such as an existing barcode or short code.
+  Future<ProductImportResult> importProducts(
+    List<Product> products,
+    List<String> parseErrors,
+  ) async {
+    final repository = ref.read(productRepositoryProvider);
+    final errors = [...parseErrors];
+    var added = 0;
+
+    for (final product in products) {
+      try {
+        await repository.addProduct(product);
+        added++;
+      } catch (error) {
+        final reason = error.toString().replaceFirst('Exception: ', '');
+        errors.add('${product.name}: $reason');
+      }
+    }
+
+    await _reloadAfterMutation();
+    return ProductImportResult(added: added, errors: errors);
   }
 
   Future<void> _reloadAfterMutation() async {

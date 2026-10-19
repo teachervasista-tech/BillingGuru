@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/widgets/copyright_banner.dart';
 import '../../data/models/sale_summary.dart';
+import '../../domain/sales_period.dart';
 import '../view_models/sales_view_model.dart';
 
 class SalesHistoryScreen extends ConsumerStatefulWidget {
@@ -87,6 +88,51 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
                     ),
                     onChanged: (value) {
                       ref.read(salesViewModelProvider.notifier).search(value);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final selected =
+                          ref.watch(salesViewModelProvider).value?.period ??
+                          SalesPeriod.all;
+                      final startMonth =
+                          ref.watch(financialYearStartMonthProvider).value ?? 4;
+                      final now = DateTime.now();
+
+                      return Align(
+                        alignment: Alignment.centerRight,
+                        child: SizedBox(
+                          width: 280,
+                          child: DropdownButtonFormField<SalesPeriod>(
+                            key: ValueKey(selected),
+                            initialValue: selected,
+                            isExpanded: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Period',
+                              prefixIcon: Icon(Icons.date_range_outlined),
+                            ),
+                            items: [
+                              for (final period in SalesPeriod.values)
+                                DropdownMenuItem(
+                                  value: period,
+                                  child: Text(
+                                    period.label(
+                                      now,
+                                      financialYearStartMonth: startMonth,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                            onChanged: (period) {
+                              if (period == null) return;
+                              ref
+                                  .read(salesViewModelProvider.notifier)
+                                  .setPeriod(period);
+                            },
+                          ),
+                        ),
+                      );
                     },
                   ),
                   const SizedBox(height: 16),
@@ -217,49 +263,80 @@ class SaleDetailsDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currency = ref.watch(currencyProvider);
+    final itemsAsync = ref.watch(saleItemsProvider(sale.id));
+
+    String money(int cents) =>
+        CurrencyFormatter.formatCents(cents, currency: currency);
 
     return AlertDialog(
       title: Text(sale.invoiceNumber),
       content: SizedBox(
         width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _DetailRow(
-              label: 'Subtotal',
-              value: CurrencyFormatter.formatCents(
-                sale.subtotalCents,
-                currency: currency,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              itemsAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (error, stackTrace) =>
+                    Text('Unable to load items: $error'),
+                data: (items) => items.isEmpty
+                    ? const Text('No items in this sale')
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (final item in items)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.productName ?? 'Unknown product',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          '${item.quantity} x '
+                                          '${money(item.unitPriceCents)}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall,
+                                        ),
+                                      ),
+                                      Text(money(item.totalCents)),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
               ),
-            ),
-            _DetailRow(
-              label: 'Discount',
-              value: CurrencyFormatter.formatCents(
-                sale.discountCents,
-                currency: currency,
+              const Divider(),
+              _DetailRow(label: 'Subtotal', value: money(sale.subtotalCents)),
+              _DetailRow(label: 'Discount', value: money(sale.discountCents)),
+              _DetailRow(label: 'Tax', value: money(sale.taxCents)),
+              const Divider(),
+              _DetailRow(
+                label: 'Total',
+                value: money(sale.totalCents),
+                isTotal: true,
               ),
-            ),
-            _DetailRow(
-              label: 'Tax',
-              value: CurrencyFormatter.formatCents(
-                sale.taxCents,
-                currency: currency,
-              ),
-            ),
-            const Divider(),
-            _DetailRow(
-              label: 'Total',
-              value: CurrencyFormatter.formatCents(
-                sale.totalCents,
-                currency: currency,
-              ),
-              isTotal: true,
-            ),
-            const SizedBox(height: 12),
-            Text('Payment: ${sale.paymentMethod}'),
-            Text('Status: ${sale.syncStatus}'),
-          ],
+              const SizedBox(height: 12),
+              Text('Payment: ${sale.paymentMethod}'),
+              Text('Status: ${sale.syncStatus}'),
+            ],
+          ),
         ),
       ),
       actions: [

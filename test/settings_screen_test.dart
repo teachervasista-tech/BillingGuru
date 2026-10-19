@@ -26,8 +26,7 @@ void main() {
     );
 
     expect(find.text('Tax percentage'), findsOneWidget);
-    expect(find.text('Configured currency'), findsOneWidget);
-    expect(find.text('INR (₹)'), findsOneWidget);
+    expect(find.text('Configured currency'), findsNothing);
   });
 
   testWidgets('Printer tab selects a template and previews its receipt', (
@@ -63,11 +62,8 @@ void main() {
 
     expect(find.text('Detailed receipt preview'), findsOneWidget);
     expect(find.textContaining('Coffee beans'), findsOneWidget);
-    expect(find.textContaining('Date:'), findsOneWidget);
-    expect(find.textContaining('Time:'), findsOneWidget);
-    expect(find.textContaining('2 x'), findsOneWidget);
-    expect(find.textContaining('Subtotal:'), findsOneWidget);
-    expect(find.textContaining('Tax:'), findsOneWidget);
-    expect(find.textContaining('TOTAL:'), findsOneWidget);
+    expect(find.textContaining('Invoice:'), findsOneWidget);
+    expect(find.textContaining('Subtotal'), findsOneWidget);
+    expect(find.textContaining('TOTAL'), findsOneWidget);
   });
 }

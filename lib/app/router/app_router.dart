@@ -54,7 +54,8 @@ String? featureRouteRedirect(String location) {
 }
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/dashboard',
+  // Home when enabled in features.json, otherwise the dashboard.
+  initialLocation: AppFeatures.instance.homeEnabled ? '/home' : '/dashboard',
   redirect: (context, state) {
     return featureRouteRedirect(state.uri.path);
   },
@@ -68,7 +69,7 @@ final GoRouter appRouter = GoRouter(
           path: '/home',
           name: 'home',
           redirect: (context, state) {
-            return AppFeatures.instance.settingsEnabled ? null : '/dashboard';
+            return AppFeatures.instance.homeEnabled ? null : '/dashboard';
           },
           builder: (context, state) {
             return const HomeScreen();

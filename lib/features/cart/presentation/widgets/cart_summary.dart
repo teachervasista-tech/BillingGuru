@@ -1,5 +1,13 @@
 import 'package:billing_guru/core/currency/currency_formatter.dart';
 import 'package:billing_guru/core/currency/currency_provider.dart';
+import 'package:billing_guru/core/printing/receipt_business_details_provider.dart';
+import 'package:billing_guru/core/printing/receipt_logo.dart';
+import 'package:billing_guru/core/printing/receipt_printer_dialog.dart';
+import 'package:billing_guru/core/printing/receipt_template_provider.dart';
+import 'package:billing_guru/features/checkout/domain/payment.dart';
+import 'package:billing_guru/core/config/app_features.dart';
+import 'package:billing_guru/features/checkout/presentation/view_models/checkout_view_model.dart';
+import 'package:billing_guru/core/tax/tax_rate_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,10 +23,33 @@ class CartSummary extends ConsumerWidget {
     return CurrencyFormatter.formatCents(cents, currency: currency);
   }
 
+  Future<void> _printReceipt(BuildContext context, WidgetRef ref) async {
+    final cart = ref.read(cartProvider);
+    final sale = await ref
+        .read(checkoutViewModelProvider.notifier)
+        .buildSale(cart, PaymentMethod.cash);
+    final currency = ref.read(currencyProvider);
+    final template = ref.read(receiptTemplateProvider);
+    final details = await ref.read(receiptBusinessDetailsProvider.future);
+    final logo = await ref.read(receiptLogoProvider.future);
+
+    if (!context.mounted) return;
+    await showReceiptPrintDialog(
+      context,
+      sale: sale,
+      currency: currency,
+      template: template,
+      businessDetails: details,
+      logo: logo,
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(cartProvider);
+    ref.watch(defaultTaxRateProvider);
     final cartViewModel = ref.read(cartProvider.notifier);
+    final checkoutEnabled = AppFeatures.instance.checkoutEnabled;
 
     return Card(
       margin: const EdgeInsets.all(16),
@@ -56,15 +87,24 @@ class CartSummary extends ConsumerWidget {
               isTotal: true,
             ),
             const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: cart.isEmpty
-                  ? null
-                  : () {
-                      context.push('/checkout');
-                    },
-              icon: const Icon(Icons.payment),
-              label: const Text('Checkout'),
-            ),
+            if (checkoutEnabled)
+              FilledButton.icon(
+                onPressed: cart.isEmpty
+                    ? null
+                    : () {
+                        context.push('/checkout');
+                      },
+                icon: const Icon(Icons.payment),
+                label: const Text('Checkout'),
+              )
+            else
+              FilledButton.icon(
+                onPressed: cart.isEmpty
+                    ? null
+                    : () => _printReceipt(context, ref),
+                icon: const Icon(Icons.print),
+                label: const Text('Print'),
+              ),
           ],
         ),
       ),

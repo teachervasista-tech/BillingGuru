@@ -1,12 +1,31 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../../../../core/database/app_database.dart';
+import '../../domain/invoice_sequence.dart';
 import '../../domain/sale.dart';
 
 class CheckoutRepository {
   CheckoutRepository({required this.database});
 
   final AppDatabase database;
+
+  Future<String> nextInvoiceNumber(
+    InvoiceSequenceReset reset,
+    DateTime date,
+  ) async {
+    final db = await database.database;
+    final prefix = reset.prefixFor(date);
+    final rows = await db.rawQuery(
+      '''
+      SELECT MAX(CAST(SUBSTR(invoice_number, ?) AS INTEGER)) AS last_sequence
+      FROM sales
+      WHERE invoice_number LIKE ?
+      ''',
+      [prefix.length + 1, '$prefix%'],
+    );
+    final last = (rows.first['last_sequence'] as int?) ?? 0;
+    return reset.format(date, last + 1);
+  }
 
   Future<void> saveSale(Sale sale) async {
     final db = await database.database;

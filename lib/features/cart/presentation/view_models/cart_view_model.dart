@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/tax/tax_rate_provider.dart';
 import '../../../products/data/models/product.dart';
 import '../../domain/cart_item.dart';
 
@@ -74,10 +75,7 @@ class CartViewModel extends Notifier<List<CartItem>> {
   int get subtotalCents =>
       state.fold(0, (total, item) => total + item.totalCents);
 
-  int get taxCents => state.fold(
-    0,
-    (total, item) => total + (item.totalCents * item.product.taxRate ~/ 100),
-  );
+  int get taxCents => subtotalCents * ref.read(defaultTaxRateProvider) ~/ 100;
 
   int get totalCents => subtotalCents + taxCents;
 }

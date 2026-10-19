@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/widgets/copyright_banner.dart';
+import '../../../products/presentation/widgets/product_category_pane.dart';
 import '../../../products/presentation/widgets/product_search_field.dart';
 import '../../../products/presentation/view_models/product_view_model.dart';
 import '../../domain/cart_item.dart';
@@ -27,7 +28,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     Future.microtask(() {
       ref
           .read(productViewModelProvider.notifier)
-          .loadProducts(includeCatalogMeta: false);
+          .loadProducts(resetFilters: true);
     });
   }
 
@@ -70,24 +71,37 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   }
 }
 
-class _ProductsPanel extends StatelessWidget {
+class _ProductsPanel extends ConsumerWidget {
   const _ProductsPanel();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final productState = ref.watch(productViewModelProvider).asData?.value;
+
     return Container(
       color: Theme.of(context).colorScheme.surface,
-      child: const Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Text(
-              'Products',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          if (productState != null) ...[
+            ProductCategoryPane(productState: productState),
+            const VerticalDivider(width: 1, thickness: 1),
+          ],
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Text(
+                    'Products',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(child: ProductSearchField()),
+              ],
             ),
           ),
-          Expanded(child: ProductSearchField()),
         ],
       ),
     );

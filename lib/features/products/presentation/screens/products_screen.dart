@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/widgets/copyright_banner.dart';
 import '../view_models/product_view_model.dart';
 import '../widgets/inactive_product_list_item.dart';
+import '../widgets/product_category_pane.dart';
 import '../widgets/product_form_dialog.dart';
 import '../widgets/product_list_item.dart';
 
@@ -28,7 +29,9 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     _searchController = TextEditingController();
 
     Future.microtask(() {
-      ref.read(productViewModelProvider.notifier).loadProducts();
+      ref
+          .read(productViewModelProvider.notifier)
+          .loadProducts(resetFilters: true);
     });
   }
 
@@ -58,6 +61,10 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
       body: Row(
         children: [
           const VerticalDivider(width: 1, thickness: 1),
+          if (!_showInactive && productsAsync.asData != null) ...[
+            ProductCategoryPane(productState: productsAsync.asData!.value),
+            const VerticalDivider(width: 1, thickness: 1),
+          ],
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(24),
@@ -67,10 +74,6 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                   _buildHeader(context, productsAsync.asData?.value),
                   const SizedBox(height: 16),
                   _buildSearchAndFilterRow(ref),
-                  if (!_showInactive && productsAsync.asData != null) ...[
-                    const SizedBox(height: 12),
-                    _buildCategoryTabs(ref, productsAsync.asData!.value),
-                  ],
                   const SizedBox(height: 16),
                   Expanded(
                     child: _buildProductBody(context, ref, productsAsync),
@@ -174,43 +177,6 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
           ],
         );
       },
-    );
-  }
-
-  Widget _buildCategoryTabs(WidgetRef ref, ProductState productState) {
-    final categories = productState.categories;
-    final selectedIndex = categories.indexOf(
-      productState.selectedCategory ?? '',
-    );
-    final initialIndex = selectedIndex < 0 ? 0 : selectedIndex + 1;
-    final totalProducts = productState.categoryCounts.values.fold<int>(
-      0,
-      (sum, count) => sum + count,
-    );
-    final tabKey = ValueKey(
-      '${categories.join('\u0000')}\u0001${productState.selectedCategory ?? ''}',
-    );
-
-    return DefaultTabController(
-      key: tabKey,
-      length: categories.length + 1,
-      initialIndex: initialIndex,
-      child: TabBar(
-        isScrollable: true,
-        tabAlignment: TabAlignment.start,
-        tabs: [
-          Tab(text: 'All ($totalProducts)'),
-          ...categories.map((category) {
-            final count = productState.categoryCounts[category] ?? 0;
-            return Tab(text: '$category ($count)');
-          }),
-        ],
-        onTap: (index) {
-          ref
-              .read(productViewModelProvider.notifier)
-              .selectCategory(index == 0 ? null : categories[index - 1]);
-        },
-      ),
     );
   }
 

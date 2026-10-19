@@ -2,12 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/database/app_database.dart';
+import '../../../../core/tax/tax_rate_provider.dart';
 import '../../../cart/domain/cart_item.dart';
 import '../../../cart/presentation/view_models/cart_view_model.dart';
 import '../../../sales/presentation/view_models/sales_view_model.dart';
 import '../../../dashboard/presentation/view_models/dashboard_view_model.dart';
 import '../../../reports/presentation/providers/report_providers.dart';
 import '../../data/repositories/checkout_repository.dart';
+import '../../domain/invoice_sequence.dart';
 import '../../domain/payment.dart';
 import '../../domain/sale.dart';
 import '../../domain/sale_item.dart';
@@ -84,6 +86,60 @@ class CheckoutViewModel extends Notifier<CheckoutState> {
     );
   }
 
+  Future<void> completeSale(WidgetRef ref, PaymentMethod paymentMethod) async {
+    final cart = ref.read(cartProvider);
+    if (cart.isEmpty) {
+      state = state.copyWith(errorMessage: 'The cart is empty.');
+      return;
+    }
+
+    await _completeSale(ref: ref, cart: cart, paymentMethod: paymentMethod);
+  }
+
+  Future<Sale> buildSale(
+    List<CartItem> cart,
+    PaymentMethod paymentMethod,
+  ) async {
+    final now = DateTime.now();
+    final reset = await ref.read(invoiceSequenceResetProvider.future);
+    final invoiceNumber = await ref
+        .read(checkoutRepositoryProvider)
+        .nextInvoiceNumber(reset, now);
+    final saleId = _uuid.v4();
+
+    final saleItems = cart.map((cartItem) {
+      return SaleItem(
+        id: _uuid.v4(),
+        saleId: saleId,
+        productId: cartItem.product.id,
+        productName: cartItem.product.name,
+        quantity: cartItem.quantity,
+        unitPriceCents: cartItem.product.priceCents,
+        totalCents: cartItem.totalCents,
+      );
+    }).toList();
+
+    final subtotalCents = cart.fold<int>(
+      0,
+      (sum, item) => sum + item.totalCents,
+    );
+
+    final taxCents = subtotalCents * ref.read(defaultTaxRateProvider) ~/ 100;
+
+    return Sale(
+      id: saleId,
+      invoiceNumber: invoiceNumber,
+      items: saleItems,
+      subtotalCents: subtotalCents,
+      discountCents: 0,
+      taxCents: taxCents,
+      totalCents: subtotalCents + taxCents,
+      paymentMethod: paymentMethod,
+      createdAt: now,
+      syncStatus: 'pending',
+    );
+  }
+
   Future<void> _completeSale({
     required WidgetRef ref,
     required List<CartItem> cart,
@@ -92,42 +148,7 @@ class CheckoutViewModel extends Notifier<CheckoutState> {
     state = state.copyWith(isSaving: true, clearError: true);
 
     try {
-      final saleId = _uuid.v4();
-
-      final saleItems = cart.map((cartItem) {
-        return SaleItem(
-          id: _uuid.v4(),
-          saleId: saleId,
-          productId: cartItem.product.id,
-          productName: cartItem.product.name,
-          quantity: cartItem.quantity,
-          unitPriceCents: cartItem.product.priceCents,
-          totalCents: cartItem.totalCents,
-        );
-      }).toList();
-
-      final subtotalCents = cart.fold<int>(
-        0,
-        (sum, item) => sum + item.totalCents,
-      );
-
-      final taxCents = cart.fold<int>(
-        0,
-        (sum, item) => sum + (item.totalCents * item.product.taxRate ~/ 100),
-      );
-
-      final sale = Sale(
-        id: saleId,
-        invoiceNumber: 'INV-${DateTime.now().millisecondsSinceEpoch}',
-        items: saleItems,
-        subtotalCents: subtotalCents,
-        discountCents: 0,
-        taxCents: taxCents,
-        totalCents: subtotalCents + taxCents,
-        paymentMethod: paymentMethod,
-        createdAt: DateTime.now(),
-        syncStatus: 'pending',
-      );
+      final sale = await buildSale(cart, paymentMethod);
 
       final repository = ref.read(checkoutRepositoryProvider);
       await repository.saveSale(sale);

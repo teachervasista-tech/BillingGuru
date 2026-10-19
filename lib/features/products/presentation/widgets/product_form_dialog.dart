@@ -227,6 +227,10 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     return null;
   }
 
+  Widget _ordered(double order, Widget child) {
+    return FocusTraversalOrder(order: NumericFocusOrder(order), child: child);
+  }
+
   @override
   Widget build(BuildContext context) {
     final title = widget.isEditing ? 'Edit product' : 'Add product';
@@ -235,135 +239,169 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
       title: Text(title),
       content: SizedBox(
         width: 450,
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: _nameController,
-                  autofocus: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Product name',
-                    prefixIcon: Icon(Icons.label_outline),
+        child: FocusTraversalGroup(
+          policy: OrderedTraversalPolicy(),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _ordered(
+                    1,
+                    TextFormField(
+                      controller: _nameController,
+                      autofocus: true,
+                      scrollPhysics: const NeverScrollableScrollPhysics(),
+                      decoration: const InputDecoration(
+                        labelText: 'Product name',
+                        prefixIcon: Icon(Icons.label_outline),
+                      ),
+                      validator: _requiredValidator,
+                      textInputAction: TextInputAction.next,
+                    ),
                   ),
-                  validator: _requiredValidator,
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _categoryController,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    hintText: 'Example: Beverages',
-                    prefixIcon: Icon(Icons.category_outlined),
+                  const SizedBox(height: 12),
+                  _ordered(
+                    2,
+                    TextFormField(
+                      controller: _categoryController,
+                      scrollPhysics: const NeverScrollableScrollPhysics(),
+                      decoration: const InputDecoration(
+                        labelText: 'Category',
+                        hintText: 'Example: Beverages',
+                        prefixIcon: Icon(Icons.category_outlined),
+                      ),
+                      validator: _requiredValidator,
+                      textInputAction: TextInputAction.next,
+                    ),
                   ),
-                  validator: _requiredValidator,
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 12),
-                ProductImagePicker(
-                  imagePath: _imagePath,
-                  onImageChanged: (imagePath) {
-                    setState(() {
-                      _imagePath = imagePath;
-                    });
-                  },
-                ),
-                const SizedBox(height: 20),
-                TextFormField(
-                  controller: _shortCodeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Short code',
-                    hintText: 'Example: COF001',
-                    prefixIcon: Icon(Icons.code),
+                  const SizedBox(height: 12),
+                  _ordered(
+                    3,
+                    ProductImagePicker(
+                      imagePath: _imagePath,
+                      onImageChanged: (imagePath) {
+                        setState(() {
+                          _imagePath = imagePath;
+                        });
+                      },
+                    ),
                   ),
-                  textCapitalization: TextCapitalization.characters,
-                  validator: (value) {
-                    final shortCode = value?.trim() ?? '';
+                  const SizedBox(height: 20),
+                  _ordered(
+                    4,
+                    TextFormField(
+                      controller: _shortCodeController,
+                      scrollPhysics: const NeverScrollableScrollPhysics(),
+                      decoration: const InputDecoration(
+                        labelText: 'Short code',
+                        hintText: 'Example: COF001',
+                        prefixIcon: Icon(Icons.code),
+                      ),
+                      textCapitalization: TextCapitalization.characters,
+                      validator: (value) {
+                        final shortCode = value?.trim() ?? '';
 
-                    if (shortCode.isEmpty) {
-                      return 'Short code is required.';
-                    }
+                        if (shortCode.isEmpty) {
+                          return 'Short code is required.';
+                        }
 
-                    if (shortCode.length > 20) {
-                      return 'Short code must be 20 characters or less.';
-                    }
+                        if (shortCode.length > 20) {
+                          return 'Short code must be 20 characters or less.';
+                        }
 
-                    if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(shortCode)) {
-                      return 'Use letters, numbers, hyphens, or underscores.';
-                    }
+                        if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(shortCode)) {
+                          return 'Use letters, numbers, hyphens, or underscores.';
+                        }
 
-                    return null;
-                  },
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _barcodeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Barcode (optional)',
-                    hintText: 'Leave blank if not available',
-                    prefixIcon: Icon(Icons.qr_code),
+                        return null;
+                      },
+                      textInputAction: TextInputAction.next,
+                    ),
                   ),
-                  validator: (value) {
-                    final barcode = value?.trim() ?? '';
+                  const SizedBox(height: 12),
+                  _ordered(
+                    5,
+                    TextFormField(
+                      controller: _barcodeController,
+                      scrollPhysics: const NeverScrollableScrollPhysics(),
+                      decoration: const InputDecoration(
+                        labelText: 'Barcode (optional)',
+                        hintText: 'Leave blank if not available',
+                        prefixIcon: Icon(Icons.qr_code),
+                      ),
+                      validator: (value) {
+                        final barcode = value?.trim() ?? '';
 
-                    if (barcode.isEmpty) {
-                      return null;
-                    }
+                        if (barcode.isEmpty) {
+                          return null;
+                        }
 
-                    if (barcode.length > 100) {
-                      return 'Barcode must be 100 characters or less.';
-                    }
+                        if (barcode.length > 100) {
+                          return 'Barcode must be 100 characters or less.';
+                        }
 
-                    return null;
-                  },
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _priceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Price',
-                    hintText: 'Example: 2.99',
-                    prefixIcon: Icon(Icons.euro),
+                        return null;
+                      },
+                      textInputAction: TextInputAction.next,
+                    ),
                   ),
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
+                  const SizedBox(height: 12),
+                  _ordered(
+                    6,
+                    TextFormField(
+                      controller: _priceController,
+                      scrollPhysics: const NeverScrollableScrollPhysics(),
+                      decoration: const InputDecoration(
+                        labelText: 'Price',
+                        hintText: 'Example: 2.99',
+                        prefixIcon: Icon(Icons.euro),
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      validator: _priceValidator,
+                      textInputAction: TextInputAction.next,
+                    ),
                   ),
-                  validator: _priceValidator,
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _taxController,
-                  decoration: const InputDecoration(
-                    labelText: 'Tax rate (%)',
-                    prefixIcon: Icon(Icons.percent),
+                  const SizedBox(height: 12),
+                  _ordered(
+                    7,
+                    TextFormField(
+                      controller: _taxController,
+                      scrollPhysics: const NeverScrollableScrollPhysics(),
+                      decoration: const InputDecoration(
+                        labelText: 'Tax rate (%)',
+                        prefixIcon: Icon(Icons.percent),
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: _positiveIntegerValidator,
+                      textInputAction: TextInputAction.next,
+                    ),
                   ),
-                  keyboardType: TextInputType.number,
-                  validator: _positiveIntegerValidator,
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _stockController,
-                  decoration: const InputDecoration(
-                    labelText: 'Stock quantity',
-                    prefixIcon: Icon(Icons.inventory_2_outlined),
+                  const SizedBox(height: 12),
+                  _ordered(
+                    8,
+                    TextFormField(
+                      controller: _stockController,
+                      scrollPhysics: const NeverScrollableScrollPhysics(),
+                      decoration: const InputDecoration(
+                        labelText: 'Stock quantity',
+                        prefixIcon: Icon(Icons.inventory_2_outlined),
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: _positiveIntegerValidator,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) {
+                        if (!_isSaving) {
+                          _saveProduct();
+                        }
+                      },
+                    ),
                   ),
-                  keyboardType: TextInputType.number,
-                  validator: _positiveIntegerValidator,
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) {
-                    if (!_isSaving) {
-                      _saveProduct();
-                    }
-                  },
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

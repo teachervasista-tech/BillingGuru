@@ -40,7 +40,19 @@ class ProductListItem extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isOutOfStock = product.stockQuantity <= 0;
+    // In the POS list, show what is still available after the cart's items.
+    final inCart = showAddToCart
+        ? ref.watch(
+            cartProvider.select((items) {
+              for (final item in items) {
+                if (item.product.id == product.id) return item.quantity;
+              }
+              return 0;
+            }),
+          )
+        : 0;
+    final availableStock = product.stockQuantity - inCart;
+    final isOutOfStock = availableStock <= 0;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -60,7 +72,7 @@ class ProductListItem extends ConsumerWidget {
         subtitle: Text(
           'Code: ${product.shortCode}\n'
           'Category: ${product.category}\n'
-          'Stock: ${product.stockQuantity}',
+          'Stock: $availableStock',
         ),
         isThreeLine: true,
         trailing: Wrap(

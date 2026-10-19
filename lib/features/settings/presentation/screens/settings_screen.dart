@@ -6,8 +6,10 @@ import 'package:billing_guru/core/printing/receipt_business_details_provider.dar
 import 'package:billing_guru/core/printing/receipt_template.dart';
 import 'package:billing_guru/core/printing/receipt_template_provider.dart';
 import 'package:billing_guru/features/checkout/domain/payment.dart';
+import 'package:billing_guru/features/checkout/domain/payment_option.dart';
 import 'package:billing_guru/features/checkout/domain/sale.dart';
 import 'package:billing_guru/features/checkout/domain/sale_item.dart';
+import 'package:billing_guru/features/checkout/presentation/providers/payment_options_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,7 +20,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(title: const Text('Settings')),
         body: Column(
@@ -41,13 +43,21 @@ class SettingsScreen extends StatelessWidget {
                       icon: Icon(Icons.receipt_long_outlined),
                       text: 'Printer',
                     ),
+                    Tab(
+                      icon: Icon(Icons.payments_outlined),
+                      text: 'Payment options',
+                    ),
                   ],
                 ),
               ),
             ),
             const Expanded(
               child: TabBarView(
-                children: [_TaxAndCurrencyTab(), _PrinterSettingsTab()],
+                children: [
+                  _TaxAndCurrencyTab(),
+                  _PrinterSettingsTab(),
+                  _PaymentOptionsTab(),
+                ],
               ),
             ),
           ],
@@ -64,10 +74,187 @@ class _TaxAndCurrencyTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(24),
-      children: const [
-        AssetCurrencyCard(),
-        SizedBox(height: 16),
-        TaxRateSettingsCard(),
+      children: const [TaxRateSettingsCard()],
+    );
+  }
+}
+
+class _PaymentOptionsTab extends ConsumerWidget {
+  const _PaymentOptionsTab();
+
+  Future<void> _edit(
+    BuildContext context,
+    WidgetRef ref, [
+    PaymentOption? existing,
+  ]) async {
+    final nameController = TextEditingController(text: existing?.name ?? '');
+    var method = existing?.method ?? PaymentMethod.digital;
+    final formKey = GlobalKey<FormState>();
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(
+            existing == null ? 'Add payment option' : 'Edit payment option',
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  autofocus: true,
+                  decoration: const InputDecoration(labelText: 'Name'),
+                  validator: (value) => value == null || value.trim().isEmpty
+                      ? 'Enter a name'
+                      : null,
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<PaymentMethod>(
+                  initialValue: method,
+                  decoration: const InputDecoration(labelText: 'Recorded as'),
+                  items: [
+                    for (final value in PaymentMethod.values)
+                      DropdownMenuItem(
+                        value: value,
+                        child: Text(
+                          '${value.name[0].toUpperCase()}${value.name.substring(1)}',
+                        ),
+                      ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) setState(() => method = value);
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.of(context).pop(true);
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final name = nameController.text;
+    // The dialog's exit animation still renders the field after the future
+    // completes, so dispose the controller once it has finished.
+    Future<void>.delayed(
+      const Duration(milliseconds: 500),
+      nameController.dispose,
+    );
+    if (saved != true) return;
+
+    final notifier = ref.read(paymentOptionsProvider.notifier);
+    if (existing == null) {
+      await notifier.add(name, method);
+    } else {
+      await notifier.update(existing.id, name, method);
+    }
+
+    if (!context.mounted) return;
+    // Stay on (or return to) the Payment options tab so the saved option is visible.
+    DefaultTabController.maybeOf(context)?.animateTo(2);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Payment option "${name.trim()}" saved')),
+    );
+  }
+
+  Future<void> _delete(
+    BuildContext context,
+    WidgetRef ref,
+    PaymentOption option,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete payment option'),
+        content: Text('Delete "${option.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ref.read(paymentOptionsProvider.notifier).delete(option.id);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final options = ref.watch(paymentOptionsProvider);
+
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Payment options',
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                if (options.isEmpty)
+                  const Text('No payment options. Add one to enable checkout.'),
+                for (final option in options)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(option.name),
+                    subtitle: Text('Recorded as ${option.method.name}'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: 'Edit',
+                          icon: const Icon(Icons.edit_outlined),
+                          onPressed: () => _edit(context, ref, option),
+                        ),
+                        IconButton(
+                          tooltip: 'Delete',
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () => _delete(context, ref, option),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.icon(
+                    onPressed: () => _edit(context, ref),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add payment option'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -103,12 +290,12 @@ class _PrinterSettingsTabState extends ConsumerState<_PrinterSettingsTab> {
     }
   }
 
-  void _showReceiptPreview(
+  Future<void> _showReceiptPreview(
     ReceiptTemplate template,
     AppCurrency currency,
     int taxRate,
     String businessDetails,
-  ) {
+  ) async {
     final sale = _sampleSale(taxRate);
     final receipt = ReceiptFormatter.format(
       sale,
@@ -120,28 +307,107 @@ class _PrinterSettingsTabState extends ConsumerState<_PrinterSettingsTab> {
     showDialog<void>(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text('${template.label} receipt preview'),
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 360, maxHeight: 520),
-            child: SingleChildScrollView(
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                color: Theme.of(context).colorScheme.surfaceContainerLow,
-                child: Text(
-                  receipt,
-                  style: const TextStyle(fontFamily: 'monospace', height: 1.5),
+        final scheme = Theme.of(context).colorScheme;
+
+        return Dialog(
+          clipBehavior: Clip.antiAlias,
+          insetPadding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 460, maxHeight: 640),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  color: scheme.primaryContainer,
+                  padding: const EdgeInsets.fromLTRB(20, 14, 8, 14),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.receipt_long,
+                        color: scheme.onPrimaryContainer,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '${template.label} receipt preview',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: scheme.onPrimaryContainer,
+                              ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Close',
+                        icon: const Icon(Icons.close),
+                        color: scheme.onPrimaryContainer,
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                Flexible(
+                  child: Container(
+                    width: double.infinity,
+                    color: scheme.surfaceContainerHighest,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 24,
+                      ),
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 24,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x33000000),
+                                blurRadius: 12,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              receipt,
+                              softWrap: false,
+                              style: const TextStyle(
+                                fontFamily: 'Consolas',
+                                fontFamilyFallback: [
+                                  'Courier New',
+                                  'Menlo',
+                                  'monospace',
+                                ],
+                                fontSize: 13,
+                                height: 1.35,
+                                color: Color(0xFF212121),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Close'),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
         );
       },
     );
@@ -214,47 +480,31 @@ class _PrinterSettingsTabState extends ConsumerState<_PrinterSettingsTab> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  'Receipt business details',
-                  style: Theme.of(context).textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Loaded from assets/config/receipt_business_details.txt',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IntrinsicWidth(
+                    child: DropdownButtonFormField<ReceiptTemplate>(
+                      key: ValueKey(selectedTemplate),
+                      initialValue: selectedTemplate,
+                      decoration: const InputDecoration(
+                        labelText: 'Receipt layout',
+                        prefixIcon: Icon(Icons.receipt_long_outlined),
+                      ),
+                      items: ReceiptTemplate.values.map((template) {
+                        return DropdownMenuItem(
+                          value: template,
+                          child: Text(template.label),
+                        );
+                      }).toList(),
+                      onChanged: _isSaving
+                          ? null
+                          : (template) {
+                              if (template != null) {
+                                _selectTemplate(template);
+                              }
+                            },
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                businessDetailsAsync.when(
-                  data: (details) => SelectableText(details),
-                  loading: () => const LinearProgressIndicator(),
-                  error: (error, stackTrace) => const Text(
-                    'Receipt business details could not be loaded.',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<ReceiptTemplate>(
-                  key: ValueKey(selectedTemplate),
-                  initialValue: selectedTemplate,
-                  decoration: const InputDecoration(
-                    labelText: 'Receipt layout',
-                    prefixIcon: Icon(Icons.receipt_long_outlined),
-                  ),
-                  items: ReceiptTemplate.values.map((template) {
-                    return DropdownMenuItem(
-                      value: template,
-                      child: Text(template.label),
-                    );
-                  }).toList(),
-                  onChanged: _isSaving
-                      ? null
-                      : (template) {
-                          if (template != null) {
-                            _selectTemplate(template);
-                          }
-                        },
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -375,24 +625,30 @@ class _TaxRateSettingsCardState extends ConsumerState<TaxRateSettingsCard> {
                 ),
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _taxRateController,
-                decoration: const InputDecoration(
-                  labelText: 'Default tax rate',
-                  prefixIcon: Icon(Icons.percent),
-                  suffixText: '%',
+              Align(
+                alignment: Alignment.centerLeft,
+                child: SizedBox(
+                  width: 220,
+                  child: TextFormField(
+                    controller: _taxRateController,
+                    decoration: const InputDecoration(
+                      labelText: 'Default tax rate',
+                      prefixIcon: Icon(Icons.percent),
+                      suffixText: '%',
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: false,
+                    ),
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    textInputAction: TextInputAction.done,
+                    validator: _validateTaxRate,
+                    onFieldSubmitted: (_) {
+                      if (!_isSaving) {
+                        _saveTaxRate();
+                      }
+                    },
+                  ),
                 ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: false,
-                ),
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                textInputAction: TextInputAction.done,
-                validator: _validateTaxRate,
-                onFieldSubmitted: (_) {
-                  if (!_isSaving) {
-                    _saveTaxRate();
-                  }
-                },
               ),
               const SizedBox(height: 16),
               Align(
@@ -405,38 +661,6 @@ class _TaxRateSettingsCardState extends ConsumerState<TaxRateSettingsCard> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class AssetCurrencyCard extends ConsumerWidget {
-  const AssetCurrencyCard({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selectedCurrency = ref.watch(currencyProvider);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Configured currency',
-              style: Theme.of(context).textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.currency_exchange),
-              title: Text(selectedCurrency.displayName),
-              subtitle: Text(selectedCurrency.code),
-            ),
-          ],
         ),
       ),
     );

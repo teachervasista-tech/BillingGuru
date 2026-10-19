@@ -58,6 +58,10 @@ dependencies:
   file_selector: ^1.1.0
   path_provider: ^2.1.6
   shared_preferences: ^2.5.6
+  printing: ^5.15.1
+  pdf: ^3.13.1
+  archive: ^4.5.2
+  xml: ^7.1.0
 
 dev_dependencies:
   flutter_test:
@@ -90,6 +94,8 @@ flutter:
     - assets/text/home_placeholder.txt
     - assets/config/features.json
     - assets/config/currency.txt
+    - assets/config/financial_year_start.txt
+    - assets/config/invoice_sequence.txt
     - assets/config/receipt_business_details.txt
   # e.g., if you bundle a local DB:
   # - assets/db/billing_guru.db

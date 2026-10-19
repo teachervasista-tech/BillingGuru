@@ -6,5 +6,6 @@
   "salesEnabled": true,
   "reportsEnabled": false,
   "inventoryEnabled": true,
-  "settingsEnabled": true
+  "settingsEnabled": true,
+  "checkoutEnabled": false
 }

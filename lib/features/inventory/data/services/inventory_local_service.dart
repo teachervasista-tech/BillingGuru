@@ -33,6 +33,7 @@ class InventoryLocalService {
       SELECT
         p.id,
         p.name,
+        p.category,
         p.barcode,
         p.stock_quantity,
         p.price_cents,
@@ -131,6 +132,7 @@ class InventoryLocalService {
     return InventoryItem(
       productId: map['id'] as String,
       name: map['name'] as String,
+      category: map['category'] as String? ?? 'Other',
       barcode: map['barcode'] as String? ?? '',
       stockQuantity: map['stock_quantity'] as int,
       priceCents: map['price_cents'] as int,

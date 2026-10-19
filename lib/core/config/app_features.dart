@@ -12,6 +12,7 @@ class AppFeatures {
     required this.reportsEnabled,
     required this.inventoryEnabled,
     required this.settingsEnabled,
+    required this.checkoutEnabled,
   });
 
   final bool homeEnabled;
@@ -22,6 +23,8 @@ class AppFeatures {
   final bool reportsEnabled;
   final bool inventoryEnabled;
   final bool settingsEnabled;
+  // When false the PoS screen shows Print instead of Checkout.
+  final bool checkoutEnabled;
 
   static late AppFeatures instance;
 
@@ -39,6 +42,7 @@ class AppFeatures {
       reportsEnabled: values['reportsEnabled'] as bool? ?? true,
       inventoryEnabled: values['inventoryEnabled'] as bool? ?? true,
       settingsEnabled: values['settingsEnabled'] as bool? ?? true,
+      checkoutEnabled: values['checkoutEnabled'] as bool? ?? true,
     );
   }
 }

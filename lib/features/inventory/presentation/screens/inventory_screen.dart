@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/widgets/copyright_banner.dart';
+import '../../../products/presentation/widgets/product_category_pane.dart';
 import '../view_models/inventory_view_model.dart';
 import '../widgets/inventory_list_item.dart';
 
@@ -100,6 +101,19 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
       ),
       body: Row(
         children: [
+          Consumer(
+            builder: (context, ref, child) {
+              final state = ref.watch(inventoryViewModelProvider).value;
+              return CategoryNavigationPane(
+                categories: state?.categories ?? const [],
+                categoryCounts: state?.categoryCounts ?? const {},
+                selectedCategory: state?.selectedCategory,
+                onSelected: (category) => ref
+                    .read(inventoryViewModelProvider.notifier)
+                    .selectCategory(category),
+              );
+            },
+          ),
           const VerticalDivider(width: 1, thickness: 1),
           Expanded(
             child: Padding(

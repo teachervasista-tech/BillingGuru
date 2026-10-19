@@ -6,8 +6,10 @@ class InventoryItem {
     required this.stockQuantity,
     required this.priceCents,
     required this.isActive,
+    this.category = 'Other',
   });
 
+  final String category;
   final String productId;
   final String name;
   final String barcode;

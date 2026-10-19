@@ -64,6 +64,10 @@ class _FakeProductRepository extends ProductRepository {
 
 void main() {
   testWidgets('category tab filters products to its category', (tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
     final container = ProviderContainer(
       overrides: [
         productRepositoryProvider.overrideWith(

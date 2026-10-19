@@ -21,23 +21,17 @@ class InventoryState {
     this.items = const [],
     this.searchText = '',
     this.lowStockOnly = false,
+    this.selectedCategory,
+    this.categories = const [],
+    this.categoryCounts = const {},
   });
 
   final List<InventoryItem> items;
   final String searchText;
   final bool lowStockOnly;
-
-  InventoryState copyWith({
-    List<InventoryItem>? items,
-    String? searchText,
-    bool? lowStockOnly,
-  }) {
-    return InventoryState(
-      items: items ?? this.items,
-      searchText: searchText ?? this.searchText,
-      lowStockOnly: lowStockOnly ?? this.lowStockOnly,
-    );
-  }
+  final String? selectedCategory;
+  final List<String> categories;
+  final Map<String, int> categoryCounts;
 }
 
 class InventoryViewModel extends AsyncNotifier<InventoryState> {
@@ -51,20 +45,50 @@ class InventoryViewModel extends AsyncNotifier<InventoryState> {
   Future<InventoryState> _loadState({
     String? searchText,
     bool? lowStockOnly,
+    Object? category = _keep,
   }) async {
     final repository = ref.read(inventoryRepositoryProvider);
 
     final currentSearch = searchText ?? state.value?.searchText ?? '';
     final currentLowStockOnly =
         lowStockOnly ?? state.value?.lowStockOnly ?? false;
+    final currentCategory = identical(category, _keep)
+        ? state.value?.selectedCategory
+        : category as String?;
 
-    final items = await repository.getInventory(search: currentSearch);
+    final items = _filterLowStock(
+      await repository.getInventory(search: currentSearch),
+      currentLowStockOnly,
+    );
+
+    final counts = <String, int>{};
+    for (final item in items) {
+      counts[item.category] = (counts[item.category] ?? 0) + 1;
+    }
+    final categories = counts.keys.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+    // A category that no longer has items falls back to "All".
+    final selected = counts.containsKey(currentCategory)
+        ? currentCategory
+        : null;
 
     return InventoryState(
-      items: _filterLowStock(items, currentLowStockOnly),
+      items: selected == null
+          ? items
+          : items.where((item) => item.category == selected).toList(),
       searchText: currentSearch,
       lowStockOnly: currentLowStockOnly,
+      selectedCategory: selected,
+      categories: categories,
+      categoryCounts: counts,
     );
+  }
+
+  static const Object _keep = Object();
+
+  Future<void> selectCategory(String? category) async {
+    state = await AsyncValue.guard(() => _loadState(category: category));
   }
 
   Future<void> loadInventory() async {
