@@ -87,18 +87,18 @@ class _ProductsPanel extends ConsumerWidget {
             ProductCategoryPane(productState: productState),
             const VerticalDivider(width: 1, thickness: 1),
           ],
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Padding(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                   child: Text(
                     'Products',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                 ),
-                Expanded(child: ProductSearchField()),
+                const Expanded(child: ProductSearchField()),
               ],
             ),
           ),
@@ -120,11 +120,11 @@ class _CartPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Text(
               'Current Cart',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
           ),
           Expanded(

@@ -230,10 +230,7 @@ class SaleListTile extends ConsumerWidget {
                   sale.totalCents,
                   currency: currency,
                 ),
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+                style: Theme.of(context).textTheme.titleMedium,
               ),
               IconButton(
                 tooltip: 'View sale',
@@ -366,8 +363,7 @@ class _DetailRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final style = isTotal
         ? Theme.of(context).textTheme.titleMedium
-              ?.copyWith(fontWeight: FontWeight.bold)
-        : Theme.of(context).textTheme.bodyLarge;
+        : Theme.of(context).textTheme.bodyMedium;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -386,13 +382,17 @@ class _EmptySalesView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.receipt_long_outlined, size: 80, color: Colors.grey),
-          SizedBox(height: 12),
-          Text('No sales found'),
+          Icon(
+            Icons.receipt_long_outlined,
+            size: 64,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 12),
+          const Text('No sales found'),
         ],
       ),
     );

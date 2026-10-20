@@ -15,21 +15,21 @@ class SideNavigationMenu extends StatelessWidget {
     return NavigationDrawer(
       selectedIndex: selectedIndex,
       onDestinationSelected: onDestinationSelected,
-      children: const [
+      children: [
         Padding(
-          padding: EdgeInsets.fromLTRB(28, 24, 16, 16),
+          padding: const EdgeInsets.fromLTRB(28, 24, 16, 16),
           child: Row(
             children: [
-              Icon(Icons.point_of_sale, size: 32),
-              SizedBox(width: 12),
+              const Icon(Icons.point_of_sale, size: 32),
+              const SizedBox(width: 12),
               Text(
                 'POS Billing',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleLarge,
               ),
             ],
           ),
         ),
-        Divider(),
+        const Divider(),
         NavigationDrawerDestination(
           icon: Icon(Icons.dashboard_outlined),
           selectedIcon: Icon(Icons.dashboard),

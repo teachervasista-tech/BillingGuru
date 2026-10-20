@@ -50,10 +50,10 @@ class ProductSearchField extends ConsumerWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.error_outline,
-                        size: 48,
-                        color: Colors.red,
+                        size: 64,
+                        color: Theme.of(context).colorScheme.error,
                       ),
                       const SizedBox(height: 12),
                       Text(

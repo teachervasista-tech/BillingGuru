@@ -53,9 +53,52 @@ class CheckoutState {
 class CheckoutViewModel extends Notifier<CheckoutState> {
   static const Uuid _uuid = Uuid();
 
+  // The sale already saved for the current cart, so printing or paying again
+  // for the same cart never records a duplicate invoice.
+  Sale? _recordedSale;
+  String? _recordedCartSignature;
+
   @override
   CheckoutState build() {
+    ref.listen(cartProvider, (_, cart) {
+      if (cart.isEmpty) {
+        _recordedSale = null;
+        _recordedCartSignature = null;
+      }
+    });
     return const CheckoutState();
+  }
+
+  String _cartSignature(List<CartItem> cart) {
+    return cart
+        .map(
+          (item) =>
+              '${item.product.id}:${item.quantity}:${item.product.priceCents}',
+        )
+        .join('|');
+  }
+
+  /// Saves the cart as a sale the first time it is called for a given cart
+  /// and returns the same sale on later calls.
+  Future<Sale> recordSale(
+    List<CartItem> cart,
+    PaymentMethod paymentMethod,
+  ) async {
+    final signature = _cartSignature(cart);
+    final existing = _recordedSale;
+    if (existing != null && _recordedCartSignature == signature) {
+      return existing;
+    }
+
+    final sale = await buildSale(cart, paymentMethod);
+    await ref.read(checkoutRepositoryProvider).saveSale(sale);
+    _recordedSale = sale;
+    _recordedCartSignature = signature;
+
+    ref.invalidate(dashboardViewModelProvider);
+    ref.invalidate(salesViewModelProvider);
+    ref.invalidate(reportProvider);
+    return sale;
   }
 
   Future<void> completeCashSale(WidgetRef ref) async {
@@ -148,14 +191,7 @@ class CheckoutViewModel extends Notifier<CheckoutState> {
     state = state.copyWith(isSaving: true, clearError: true);
 
     try {
-      final sale = await buildSale(cart, paymentMethod);
-
-      final repository = ref.read(checkoutRepositoryProvider);
-      await repository.saveSale(sale);
-
-      ref.invalidate(dashboardViewModelProvider);
-      ref.invalidate(salesViewModelProvider);
-      ref.invalidate(reportProvider);
+      final sale = await recordSale(cart, paymentMethod);
 
       ref.read(cartProvider.notifier).clear();
 

@@ -16,7 +16,7 @@ class PlaceholderScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 80, color: Theme.of(context).colorScheme.primary),
+            Icon(icon, size: 64, color: Theme.of(context).colorScheme.primary),
             const SizedBox(height: 16),
             Text('$title screen'),
           ],

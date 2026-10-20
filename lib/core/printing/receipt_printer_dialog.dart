@@ -113,11 +113,14 @@ class _ReceiptPrintDialogState extends State<_ReceiptPrintDialog> {
     }
     // Printer drivers handle a fixed page height better than the unbounded roll format.
     final lines = '\n'.allMatches(widget.receipt).length + 1;
-    final height = lines * 11.0 + (logoImage != null ? 76 : 0) + 40;
+    final height = lines * 11.0 + (logoImage != null ? 76 : 0) + 48;
     doc.addPage(
       pw.Page(
         pageFormat: PdfPageFormat(widget.paperSize.pageFormat.width, height),
-        margin: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        margin: pw.EdgeInsets.symmetric(
+          horizontal: widget.paperSize.horizontalMargin,
+          vertical: 16,
+        ),
         build: (_) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
@@ -228,7 +231,10 @@ class _ReceiptPrintDialogState extends State<_ReceiptPrintDialog> {
               ),
             if (_error != null) ...[
               const SizedBox(height: 8),
-              Text(_error!, style: const TextStyle(color: Colors.red)),
+              Text(
+                _error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
             ],
             const SizedBox(height: 12),
             Flexible(

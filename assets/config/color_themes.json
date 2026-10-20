@@ -1,0 +1,12 @@
+{
+  "selected": "purple",
+  "themes": [
+    { "id": "blue", "label": "Blue", "color": "#1565C0" },
+    { "id": "teal", "label": "Teal", "color": "#00796B" },
+    { "id": "green", "label": "Green", "color": "#2E7D32" },
+    { "id": "purple", "label": "Purple", "color": "#6A1B9A" },
+    { "id": "orange", "label": "Orange", "color": "#E65100" },
+    { "id": "red", "label": "Red", "color": "#C62828" },
+    { "id": "slate", "label": "Slate", "color": "#455A64" }
+  ]
+}

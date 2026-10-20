@@ -32,12 +32,18 @@ extension ReceiptPaperSizeDetails on ReceiptPaperSize {
     };
   }
 
+  /// Blank space kept on the left and right so text never reaches the edge.
+  double get horizontalMargin {
+    return switch (this) {
+      ReceiptPaperSize.twoInch => 14,
+      ReceiptPaperSize.threeInch => 20,
+    };
+  }
+
   /// Courier glyphs are 0.6 em wide; sized so [columns] fill the printable width.
   double get fontSize {
-    return switch (this) {
-      ReceiptPaperSize.twoInch => 7.4,
-      ReceiptPaperSize.threeInch => 8,
-    };
+    final printable = pageFormat.width - 2 * horizontalMargin;
+    return printable / (columns * 0.6);
   }
 }
 

@@ -77,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     errorBuilder: (context, error, stackTrace) {
                       return Icon(
                         Icons.home_outlined,
-                        size: 80,
+                        size: 64,
                         color: colorScheme.primary,
                       );
                     },

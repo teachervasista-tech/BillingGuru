@@ -10,7 +10,7 @@ class BillingGuru extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'Billing Guru',
-      theme: appTheme,
+      theme: buildAppTheme(AppColorTheme.selected),
       routerConfig: appRouter,
     );
   }

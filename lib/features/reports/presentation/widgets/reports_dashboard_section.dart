@@ -174,7 +174,11 @@ class _ReportErrorCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, color: Colors.red, size: 40),
+            Icon(
+              Icons.error_outline,
+              color: Theme.of(context).colorScheme.error,
+              size: 64,
+            ),
             const SizedBox(height: 12),
             Text(
               'Unable to load dashboard reports.',

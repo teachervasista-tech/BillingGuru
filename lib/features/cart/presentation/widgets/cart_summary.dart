@@ -6,6 +6,7 @@ import 'package:billing_guru/core/printing/receipt_paper_size.dart';
 import 'package:billing_guru/core/printing/receipt_printer_dialog.dart';
 import 'package:billing_guru/core/printing/receipt_template_provider.dart';
 import 'package:billing_guru/features/checkout/domain/payment.dart';
+import 'package:billing_guru/features/checkout/domain/sale.dart';
 import 'package:billing_guru/core/config/app_features.dart';
 import 'package:billing_guru/features/checkout/presentation/view_models/checkout_view_model.dart';
 import 'package:billing_guru/core/tax/tax_rate_provider.dart';
@@ -26,9 +27,18 @@ class CartSummary extends ConsumerWidget {
 
   Future<void> _printReceipt(BuildContext context, WidgetRef ref) async {
     final cart = ref.read(cartProvider);
-    final sale = await ref
-        .read(checkoutViewModelProvider.notifier)
-        .buildSale(cart, PaymentMethod.cash);
+    final Sale sale;
+    try {
+      sale = await ref
+          .read(checkoutViewModelProvider.notifier)
+          .recordSale(cart, PaymentMethod.cash);
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to save the sale: $error')),
+      );
+      return;
+    }
     final currency = ref.read(currencyProvider);
     final template = ref.read(receiptTemplateProvider);
     final details = await ref.read(receiptBusinessDetailsProvider.future);
@@ -70,7 +80,7 @@ class CartSummary extends ConsumerWidget {
                 Text(
                   'Cart: '
                   '${cartViewModel.itemCount} item(s)',
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
               ],
             ),
@@ -129,9 +139,8 @@ class _SummaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = isTotal
-        ? Theme.of(context).textTheme.titleLarge
-              ?.copyWith(fontWeight: FontWeight.bold)
-        : Theme.of(context).textTheme.bodyLarge;
+        ? Theme.of(context).textTheme.titleMedium
+        : Theme.of(context).textTheme.bodyMedium;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),

@@ -93,6 +93,7 @@ flutter:
     - assets/text/
     - assets/text/home_placeholder.txt
     - assets/config/features.json
+    - assets/config/color_themes.json
     - assets/config/currency.txt
     - assets/config/financial_year_start.txt
     - assets/config/invoice_sequence.txt

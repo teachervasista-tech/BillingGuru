@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app.dart';
+import 'app/theme.dart';
 import 'core/database/database_initializer.dart';
 import 'core/database/app_database.dart';
 import 'core/config/app_features.dart';
@@ -13,6 +14,7 @@ import 'core/tax/tax_rate_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppFeatures.load();
+  await AppColorTheme.load();
 
   // Use this once only if the schema is old.
   //await AppDatabase.instance.deleteDatabaseForDevelopment();

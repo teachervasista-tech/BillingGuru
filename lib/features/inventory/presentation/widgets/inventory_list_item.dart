@@ -46,9 +46,7 @@ class InventoryListItem extends ConsumerWidget {
                 children: [
                   Text(
                     '${item.stockQuantity}',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: isLowStock ? Colors.red : Colors.green,
                     ),
                   ),

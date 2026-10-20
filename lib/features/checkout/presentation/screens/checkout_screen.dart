@@ -15,6 +15,7 @@ import '../../../../app/widgets/copyright_banner.dart';
 import '../../../cart/presentation/view_models/cart_view_model.dart';
 import '../../domain/payment.dart';
 import '../../domain/payment_option.dart';
+import '../../domain/sale.dart';
 import '../providers/payment_options_provider.dart';
 import '../view_models/checkout_view_model.dart';
 
@@ -60,9 +61,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Future<void> _printReceipt(PaymentOption? option) async {
     final cart = ref.read(cartProvider);
-    final sale = await ref
-        .read(checkoutViewModelProvider.notifier)
-        .buildSale(cart, option?.method ?? PaymentMethod.cash);
+    final Sale sale;
+    try {
+      sale = await ref
+          .read(checkoutViewModelProvider.notifier)
+          .recordSale(cart, option?.method ?? PaymentMethod.cash);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to save the sale: $error')),
+      );
+      return;
+    }
     final currency = ref.read(currencyProvider);
     final template = ref.read(receiptTemplateProvider);
     final details = await ref.read(receiptBusinessDetailsProvider.future);
@@ -229,7 +239,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     Text(
                       checkoutState.errorMessage!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.red),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                     ),
                   ],
                 ],
