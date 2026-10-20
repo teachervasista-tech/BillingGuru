@@ -2,6 +2,7 @@ import 'package:billing_guru/core/currency/currency_formatter.dart';
 import 'package:billing_guru/core/currency/currency_provider.dart';
 import 'package:billing_guru/core/printing/receipt_business_details_provider.dart';
 import 'package:billing_guru/core/printing/receipt_logo.dart';
+import 'package:billing_guru/core/printing/receipt_paper_size.dart';
 import 'package:billing_guru/core/printing/receipt_printer_dialog.dart';
 import 'package:billing_guru/core/printing/receipt_template_provider.dart';
 import 'package:billing_guru/features/checkout/domain/payment.dart';
@@ -34,14 +35,16 @@ class CartSummary extends ConsumerWidget {
     final logo = await ref.read(receiptLogoProvider.future);
 
     if (!context.mounted) return;
-    await showReceiptPrintDialog(
+    final printed = await showReceiptPrintDialog(
       context,
+      paperSize: ref.read(receiptPaperSizeProvider),
       sale: sale,
       currency: currency,
       template: template,
       businessDetails: details,
       logo: logo,
     );
+    if (printed) ref.read(cartProvider.notifier).clear();
   }
 
   @override

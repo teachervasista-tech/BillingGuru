@@ -1,6 +1,8 @@
+import 'package:billing_guru/core/config/app_features.dart';
 import 'package:billing_guru/core/currency/currency_provider.dart';
 import 'package:billing_guru/core/currency/currency.dart';
 import 'package:billing_guru/core/tax/tax_rate_provider.dart';
+import 'package:billing_guru/core/printing/receipt_paper_size.dart';
 import 'package:billing_guru/core/printing/receipt_printer_service.dart';
 import 'package:billing_guru/core/printing/receipt_business_details_provider.dart';
 import 'package:billing_guru/core/printing/receipt_template.dart';
@@ -19,8 +21,10 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final showPayments = AppFeatures.instance.checkoutEnabled;
+
     return DefaultTabController(
-      length: 3,
+      length: showPayments ? 3 : 2,
       child: Scaffold(
         appBar: AppBar(title: const Text('Settings')),
         body: Column(
@@ -32,31 +36,32 @@ class SettingsScreen extends StatelessWidget {
                   bottom: BorderSide(color: Theme.of(context).dividerColor),
                 ),
               ),
-              child: const Padding(
-                padding: EdgeInsets.fromLTRB(24, 12, 24, 0),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
                 child: TabBar(
                   isScrollable: true,
                   tabAlignment: TabAlignment.start,
                   tabs: [
-                    Tab(icon: Icon(Icons.currency_rupee), text: 'Tax'),
-                    Tab(
+                    const Tab(icon: Icon(Icons.currency_rupee), text: 'Tax'),
+                    const Tab(
                       icon: Icon(Icons.receipt_long_outlined),
                       text: 'Printer',
                     ),
-                    Tab(
-                      icon: Icon(Icons.payments_outlined),
-                      text: 'Payment options',
-                    ),
+                    if (showPayments)
+                      const Tab(
+                        icon: Icon(Icons.payments_outlined),
+                        text: 'Payment options',
+                      ),
                   ],
                 ),
               ),
             ),
-            const Expanded(
+            Expanded(
               child: TabBarView(
                 children: [
-                  _TaxAndCurrencyTab(),
-                  _PrinterSettingsTab(),
-                  _PaymentOptionsTab(),
+                  const _TaxAndCurrencyTab(),
+                  const _PrinterSettingsTab(),
+                  if (showPayments) const _PaymentOptionsTab(),
                 ],
               ),
             ),
@@ -295,6 +300,7 @@ class _PrinterSettingsTabState extends ConsumerState<_PrinterSettingsTab> {
     AppCurrency currency,
     int taxRate,
     String businessDetails,
+    ReceiptPaperSize paperSize,
   ) async {
     final sale = _sampleSale(taxRate);
     final receipt = ReceiptFormatter.format(
@@ -302,6 +308,7 @@ class _PrinterSettingsTabState extends ConsumerState<_PrinterSettingsTab> {
       currency,
       template: template,
       businessDetails: businessDetails,
+      paperSize: paperSize,
     );
 
     showDialog<void>(
@@ -454,6 +461,7 @@ class _PrinterSettingsTabState extends ConsumerState<_PrinterSettingsTab> {
   @override
   Widget build(BuildContext context) {
     final selectedTemplate = ref.watch(receiptTemplateProvider);
+    final paperSize = ref.watch(receiptPaperSizeProvider);
     final currency = ref.watch(currencyProvider);
     final taxRate = ref.watch(defaultTaxRateProvider);
     final businessDetailsAsync = ref.watch(receiptBusinessDetailsProvider);
@@ -515,6 +523,33 @@ class _PrinterSettingsTabState extends ConsumerState<_PrinterSettingsTab> {
                 ),
                 const SizedBox(height: 16),
                 Align(
+                  alignment: Alignment.centerLeft,
+                  child: IntrinsicWidth(
+                    child: DropdownButtonFormField<ReceiptPaperSize>(
+                      key: ValueKey(paperSize),
+                      initialValue: paperSize,
+                      decoration: const InputDecoration(
+                        labelText: 'Printer size',
+                        prefixIcon: Icon(Icons.print_outlined),
+                      ),
+                      items: ReceiptPaperSize.values.map((size) {
+                        return DropdownMenuItem(
+                          value: size,
+                          child: Text(size.label),
+                        );
+                      }).toList(),
+                      onChanged: (size) {
+                        if (size != null) {
+                          ref
+                              .read(receiptPaperSizeProvider.notifier)
+                              .select(size);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Align(
                   alignment: Alignment.centerRight,
                   child: FilledButton.icon(
                     onPressed: businessDetailsAsync.asData == null
@@ -524,6 +559,7 @@ class _PrinterSettingsTabState extends ConsumerState<_PrinterSettingsTab> {
                             currency,
                             taxRate,
                             businessDetailsAsync.asData!.value,
+                            paperSize,
                           ),
                     icon: const Icon(Icons.visibility_outlined),
                     label: const Text('Preview receipt'),

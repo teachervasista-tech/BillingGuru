@@ -1,4 +1,5 @@
 import 'package:billing_guru/core/currency/currency_provider.dart';
+import 'package:billing_guru/core/printing/receipt_paper_size.dart';
 import 'package:billing_guru/core/printing/receipt_template.dart';
 import 'package:billing_guru/core/printing/receipt_template_provider.dart';
 import 'package:billing_guru/core/tax/tax_rate_provider.dart';
@@ -49,7 +50,13 @@ void main() {
     await tester.tap(find.text('Printer'));
     await tester.pumpAndSettle();
     expect(find.text('Bill receipt template'), findsOneWidget);
-    expect(find.textContaining('[Street Address]'), findsOneWidget);
+    expect(find.textContaining('[Street Address]'), findsNothing);
+
+    await tester.tap(find.byType(DropdownButtonFormField<ReceiptPaperSize>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('2" (58 mm)').last);
+    await tester.pumpAndSettle();
+    expect(container.read(receiptPaperSizeProvider), ReceiptPaperSize.twoInch);
 
     await tester.tap(find.byType(DropdownButtonFormField<ReceiptTemplate>));
     await tester.pumpAndSettle();

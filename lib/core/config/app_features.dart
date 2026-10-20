@@ -26,7 +26,17 @@ class AppFeatures {
   // When false the PoS screen shows Print instead of Checkout.
   final bool checkoutEnabled;
 
-  static late AppFeatures instance;
+  static AppFeatures instance = AppFeatures._(
+    homeEnabled: true,
+    customersEnabled: true,
+    productsEnabled: true,
+    posEnabled: true,
+    salesEnabled: true,
+    reportsEnabled: true,
+    inventoryEnabled: true,
+    settingsEnabled: true,
+    checkoutEnabled: true,
+  );
 
   static Future<void> load() async {
     final jsonText = await rootBundle.loadString('assets/config/features.json');

@@ -8,6 +8,7 @@ import 'package:printing/printing.dart';
 
 import '../../features/checkout/domain/sale.dart';
 import 'receipt_logo.dart';
+import 'receipt_paper_size.dart';
 import 'receipt_printer_service.dart';
 import 'receipt_template.dart';
 
@@ -15,13 +16,15 @@ typedef PrinterLoader = Future<List<Printer>> Function();
 
 Future<List<Printer>> _listSystemPrinters() => Printing.listPrinters();
 
-Future<void> showReceiptPrintDialog(
+/// Resolves to true when the receipt was printed.
+Future<bool> showReceiptPrintDialog(
   BuildContext context, {
   required Sale sale,
   required AppCurrency currency,
   required ReceiptTemplate template,
   required String businessDetails,
   Uint8List? logo,
+  ReceiptPaperSize paperSize = ReceiptPaperSize.threeInch,
   PrinterLoader printerLoader = _listSystemPrinters,
 }) {
   final receipt = ReceiptFormatter.format(
@@ -30,17 +33,19 @@ Future<void> showReceiptPrintDialog(
     template: template,
     businessDetails: businessDetails,
     showLogoPlaceholder: logo == null,
+    paperSize: paperSize,
   );
 
-  return showDialog<void>(
+  return showDialog<bool>(
     context: context,
     builder: (context) => _ReceiptPrintDialog(
       title: 'Print receipt (${template.label})',
       receipt: receipt,
       logo: logo,
+      paperSize: paperSize,
       printerLoader: printerLoader,
     ),
-  );
+  ).then((printed) => printed ?? false);
 }
 
 class _ReceiptPrintDialog extends StatefulWidget {
@@ -48,12 +53,14 @@ class _ReceiptPrintDialog extends StatefulWidget {
     required this.title,
     required this.receipt,
     required this.logo,
+    required this.paperSize,
     required this.printerLoader,
   });
 
   final String title;
   final String receipt;
   final Uint8List? logo;
+  final ReceiptPaperSize paperSize;
   final PrinterLoader printerLoader;
 
   @override
@@ -109,8 +116,8 @@ class _ReceiptPrintDialogState extends State<_ReceiptPrintDialog> {
     final height = lines * 11.0 + (logoImage != null ? 76 : 0) + 40;
     doc.addPage(
       pw.Page(
-        pageFormat: PdfPageFormat(PdfPageFormat.roll80.width, height),
-        margin: const pw.EdgeInsets.all(8),
+        pageFormat: PdfPageFormat(widget.paperSize.pageFormat.width, height),
+        margin: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         build: (_) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
@@ -123,7 +130,10 @@ class _ReceiptPrintDialogState extends State<_ReceiptPrintDialog> {
               ),
             pw.Text(
               widget.receipt,
-              style: pw.TextStyle(font: pw.Font.courier(), fontSize: 8),
+              style: pw.TextStyle(
+                font: pw.Font.courier(),
+                fontSize: widget.paperSize.fontSize,
+              ),
             ),
           ],
         ),
@@ -153,7 +163,7 @@ class _ReceiptPrintDialogState extends State<_ReceiptPrintDialog> {
             printer: printer,
             onLayout: layout,
             name: 'Receipt',
-            format: PdfPageFormat.roll80,
+            format: widget.paperSize.pageFormat,
             usePrinterSettings: true,
           ),
         ).timeout(const Duration(seconds: 15));
@@ -165,12 +175,12 @@ class _ReceiptPrintDialogState extends State<_ReceiptPrintDialog> {
         ok = await Printing.layoutPdf(
           onLayout: layout,
           name: 'Receipt',
-          format: PdfPageFormat.roll80,
+          format: widget.paperSize.pageFormat,
         );
       }
       if (!mounted) return;
       if (ok) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true);
         return;
       }
       setState(() => _error = 'The receipt was not printed.');

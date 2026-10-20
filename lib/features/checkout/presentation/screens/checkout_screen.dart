@@ -3,6 +3,7 @@ import 'package:billing_guru/core/currency/currency_provider.dart';
 import 'package:billing_guru/core/tax/tax_rate_provider.dart';
 import 'package:billing_guru/core/printing/receipt_business_details_provider.dart';
 import 'package:billing_guru/core/printing/receipt_logo.dart';
+import 'package:billing_guru/core/printing/receipt_paper_size.dart';
 import 'package:billing_guru/core/printing/receipt_printer_dialog.dart';
 import 'package:billing_guru/core/printing/receipt_template_provider.dart';
 import 'package:flutter/material.dart';
@@ -70,6 +71,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (!mounted) return;
     await showReceiptPrintDialog(
       context,
+      paperSize: ref.read(receiptPaperSizeProvider),
       sale: sale,
       currency: currency,
       template: template,

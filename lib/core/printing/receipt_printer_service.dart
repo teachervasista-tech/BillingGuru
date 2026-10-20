@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import 'receipt_business_details_provider.dart';
+import 'receipt_paper_size.dart';
 import '../../features/checkout/domain/payment.dart';
 import '../../features/checkout/domain/sale.dart';
 import 'receipt_template.dart';
@@ -46,7 +47,9 @@ class ReceiptFormatter {
     required ReceiptTemplate template,
     required String businessDetails,
     bool showLogoPlaceholder = true,
+    ReceiptPaperSize paperSize = ReceiptPaperSize.threeInch,
   }) {
+    final width = paperSize.columns;
     final receipt = StringBuffer();
     final numberFormat = NumberFormat.decimalPatternDigits(
       locale: currency.locale,
@@ -66,10 +69,10 @@ class ReceiptFormatter {
     final rule = '-' * width;
 
     // Fixed-width table columns: item | qty | price | total.
-    const qtyWidth = 4;
-    const priceWidth = 10;
-    const totalWidth = 11;
-    const nameWidth = width - qtyWidth - priceWidth - totalWidth;
+    final qtyWidth = paperSize.qtyWidth;
+    final priceWidth = paperSize.priceWidth;
+    final totalWidth = paperSize.totalWidth;
+    final nameWidth = width - qtyWidth - priceWidth - totalWidth;
 
     // Splits text into chunks of at most [max] characters, preferring spaces.
     List<String> wrap(String text, int max) {

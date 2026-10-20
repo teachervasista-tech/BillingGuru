@@ -1,4 +1,5 @@
 import 'package:billing_guru/core/currency/currency.dart';
+import 'package:billing_guru/core/printing/receipt_paper_size.dart';
 import 'package:billing_guru/core/printing/receipt_printer_service.dart';
 import 'package:billing_guru/core/printing/receipt_template.dart';
 import 'package:billing_guru/features/checkout/domain/payment.dart';
@@ -39,22 +40,23 @@ void main() {
     syncStatus: 'pending',
   );
 
-  test('receipt lines fit the fixed width for every template', () {
-    for (final template in ReceiptTemplate.values) {
-      final text = ReceiptFormatter.format(
-        sale(),
-        AppCurrency.eur,
-        template: template,
-        businessDetails: 'Billing Guru\nMain Street 1',
-      );
-      for (final line in text.split('\n')) {
-        expect(line.length, lessThanOrEqualTo(ReceiptFormatter.width));
+  test('receipt lines fit the fixed width for every template and size', () {
+    for (final size in ReceiptPaperSize.values) {
+      for (final template in ReceiptTemplate.values) {
+        final text = ReceiptFormatter.format(
+          sale(),
+          AppCurrency.eur,
+          template: template,
+          businessDetails: 'Billing Guru\nMain Street 1',
+          paperSize: size,
+        );
+        for (final line in text.split('\n')) {
+          expect(line.length, lessThanOrEqualTo(size.columns));
+        }
+        expect(text, contains('TOTAL'));
+        expect(text, contains('[ LOGO IMAGE ]'));
+        expect(text, isNot(contains('Billing Guru')));
       }
-      expect(text, contains('TOTAL'));
-      expect(text, contains('[ LOGO IMAGE ]'));
-      expect(text, isNot(contains('Billing Guru')));
-      // ignore: avoid_print
-      print(text);
     }
   });
 }
