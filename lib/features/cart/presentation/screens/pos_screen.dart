@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -22,15 +23,104 @@ class PosScreen extends ConsumerStatefulWidget {
 }
 
 class _PosScreenState extends ConsumerState<PosScreen> {
+  static const _scanGap = Duration(milliseconds: 100);
+  static const _minBarcodeLength = 3;
+
+  final StringBuffer _scanBuffer = StringBuffer();
+  DateTime? _lastKeyTime;
+
   @override
   void initState() {
     super.initState();
+
+    HardwareKeyboard.instance.addHandler(_onHardwareKey);
 
     Future.microtask(() {
       ref
           .read(productViewModelProvider.notifier)
           .loadProducts(resetFilters: true);
     });
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onHardwareKey);
+    super.dispose();
+  }
+
+  // Keyboard-wedge scanners type the code quickly and finish with Enter.
+  // When a text field has focus it handles the input itself.
+  bool _onHardwareKey(KeyEvent event) {
+    if (event is! KeyDownEvent || !mounted) {
+      return false;
+    }
+    if (ModalRoute.of(context)?.isCurrent != true) {
+      return false;
+    }
+    final focusContext = FocusManager.instance.primaryFocus?.context;
+    if (focusContext != null &&
+        (focusContext.widget is EditableText ||
+            focusContext.findAncestorWidgetOfExactType<EditableText>() !=
+                null)) {
+      _scanBuffer.clear();
+      return false;
+    }
+
+    final now = DateTime.now();
+    if (_lastKeyTime != null && now.difference(_lastKeyTime!) > _scanGap) {
+      _scanBuffer.clear();
+    }
+    _lastKeyTime = now;
+
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.enter ||
+        key == LogicalKeyboardKey.numpadEnter) {
+      final code = _scanBuffer.toString();
+      _scanBuffer.clear();
+      if (code.length >= _minBarcodeLength) {
+        _addScannedBarcode(code);
+        return true;
+      }
+      return false;
+    }
+
+    final char = event.character;
+    if (char != null && char.length == 1 && char.codeUnitAt(0) > 32) {
+      _scanBuffer.write(char);
+    }
+    return false;
+  }
+
+  Future<void> _addScannedBarcode(String barcode) async {
+    final product = await ref
+        .read(productViewModelProvider.notifier)
+        .findProductByBarcode(barcode);
+
+    if (!mounted) {
+      return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (product == null) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Product not found. Please add the product first, then scan the barcode again.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    ref.read(cartProvider.notifier).addProduct(product);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('${product.name} added to cart.'),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
 
   Future<void> _openBarcodeScanner() async {

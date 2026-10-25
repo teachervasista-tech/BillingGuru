@@ -134,7 +134,7 @@ class _ReceiptPrintDialogState extends State<_ReceiptPrintDialog> {
             pw.Text(
               widget.receipt,
               style: pw.TextStyle(
-                font: pw.Font.courier(),
+                font: pw.Font.courierBold(),
                 fontSize: widget.paperSize.fontSize,
               ),
             ),
