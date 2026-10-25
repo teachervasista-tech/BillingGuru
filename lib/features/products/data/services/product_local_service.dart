@@ -240,4 +240,21 @@ class ProductLocalService {
 
     return rows.map(ProductMapper.fromMap).toList();
   }
+
+  Future<Product?> findByBarcode(String barcode) async {
+    final db = await database.database;
+
+    final result = await db.query(
+      'products',
+      where: 'barcode = ? AND is_active = 1',
+      whereArgs: [barcode],
+      limit: 1,
+    );
+
+    if (result.isEmpty) {
+      return null;
+    }
+
+    return ProductMapper.fromMap(result.first);
+  }
 }

@@ -49,4 +49,8 @@ class ProductRepository {
   Future<Map<String, int>> getActiveCategoryCounts() {
     return localService.getActiveCategoryCounts();
   }
+
+  Future<Product?> findByBarcode(String barcode) {
+    return localService.findByBarcode(barcode);
+  }
 }

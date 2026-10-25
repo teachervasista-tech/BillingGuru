@@ -306,4 +306,15 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
 
     state = AsyncValue.data(refreshedState);
   }
+
+  Future<Product?> findProductByBarcode(String barcode) async {
+    final repository = ref.read(productRepositoryProvider);
+
+    try {
+      return await repository.findByBarcode(barcode);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      return null;
+    }
+  }
 }

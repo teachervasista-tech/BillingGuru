@@ -1,14 +1,76 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../cart/presentation/view_models/cart_view_model.dart';
+
 import '../view_models/product_view_model.dart';
 import 'product_list_item.dart';
 
-class ProductSearchField extends ConsumerWidget {
+class ProductSearchField extends ConsumerStatefulWidget {
   const ProductSearchField({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProductSearchField> createState() => _ProductSearchFieldState();
+}
+
+class _ProductSearchFieldState extends ConsumerState<ProductSearchField> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+
+    ref.read(productViewModelProvider.notifier).clearSearch();
+
+    FocusScope.of(context).unfocus();
+  }
+
+  Future<void> _handleSubmittedValue(String value) async {
+    final barcode = value.trim();
+
+    if (barcode.isEmpty) {
+      return;
+    }
+
+    final product = await ref
+        .read(productViewModelProvider.notifier)
+        .findProductByBarcode(barcode);
+
+    if (!mounted) {
+      return;
+    }
+
+    if (product == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Product not found. Please add the product first, then scan the barcode again.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    ref.read(cartProvider.notifier).addProduct(product);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${product.name} added to cart.'),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    _clearSearch();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final productsAsync = ref.watch(
       productViewModelProvider.select(
         (value) => value.whenData((state) => state.products),
@@ -21,15 +83,23 @@ class ProductSearchField extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.all(16),
           child: TextField(
+            controller: _searchController,
             decoration: InputDecoration(
               labelText: 'Search product or barcode',
               hintText: 'Type Coffee, Tea, or a barcode',
               prefixIcon: const Icon(Icons.search),
-              suffixIcon: IconButton(
-                tooltip: 'Clear search',
-                icon: const Icon(Icons.clear),
-                onPressed: () {
-                  ref.read(productViewModelProvider.notifier).clearSearch();
+              suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _searchController,
+                builder: (context, value, _) {
+                  if (value.text.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return IconButton(
+                    tooltip: 'Clear search',
+                    icon: const Icon(Icons.clear),
+                    onPressed: _clearSearch,
+                  );
                 },
               ),
             ),
@@ -38,6 +108,7 @@ class ProductSearchField extends ConsumerWidget {
                   .read(productViewModelProvider.notifier)
                   .search(value, includeCatalogMeta: false);
             },
+            onSubmitted: _handleSubmittedValue,
           ),
         ),
         Expanded(

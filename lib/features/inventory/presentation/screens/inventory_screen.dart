@@ -172,23 +172,17 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                           suffixIcon: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              IconButton(
-                                tooltip: lowStockOnly
-                                    ? 'Disable low stock filter'
-                                    : 'Enable low stock filter',
-                                onPressed: () {
+                              Text(
+                                'Low stock only',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                              Switch(
+                                value: lowStockOnly,
+                                onChanged: (value) {
                                   ref
                                       .read(inventoryViewModelProvider.notifier)
-                                      .setLowStockOnly(!lowStockOnly);
+                                      .setLowStockOnly(value);
                                 },
-                                icon: Icon(
-                                  lowStockOnly
-                                      ? Icons.filter_alt
-                                      : Icons.filter_alt_outlined,
-                                  color: lowStockOnly
-                                      ? Theme.of(context).colorScheme.primary
-                                      : null,
-                                ),
                               ),
                               IconButton(
                                 tooltip: 'Clear search',
