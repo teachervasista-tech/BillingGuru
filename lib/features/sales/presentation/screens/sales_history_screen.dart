@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/widgets/copyright_banner.dart';
+import '../../../checkout/domain/payment.dart';
 import '../../../checkout/domain/sale.dart';
 import '../../data/models/sale_summary.dart';
 import '../../domain/sales_period.dart';
@@ -221,7 +222,7 @@ class SaleListTile extends ConsumerWidget {
         discountCents: sale.discountCents,
         taxCents: sale.taxCents,
         totalCents: sale.totalCents,
-        paymentMethod: sale.paymentMethod,
+        paymentMethod: PaymentMethod.values.byName(sale.paymentMethod),
         createdAt: sale.createdAt,
         syncStatus: sale.syncStatus,
       );
@@ -315,7 +316,7 @@ class SaleDetailsDialog extends ConsumerWidget {
         discountCents: sale.discountCents,
         taxCents: sale.taxCents,
         totalCents: sale.totalCents,
-        paymentMethod: sale.paymentMethod,
+        paymentMethod: PaymentMethod.values.byName(sale.paymentMethod),
         createdAt: sale.createdAt,
         syncStatus: sale.syncStatus,
       );
@@ -425,7 +426,9 @@ class SaleDetailsDialog extends ConsumerWidget {
           child: const Text('Close'),
         ),
         FilledButton.icon(
-          onPressed: itemsAsync.isLoading ? null : () => _reprintReceipt(context, ref),
+          onPressed: itemsAsync.isLoading
+              ? null
+              : () => _reprintReceipt(context, ref),
           icon: const Icon(Icons.print_outlined),
           label: const Text('Reprint'),
         ),
