@@ -1,9 +1,15 @@
 import 'package:billing_guru/core/currency/currency_formatter.dart';
 import 'package:billing_guru/core/currency/currency_provider.dart';
+import 'package:billing_guru/core/printing/receipt_business_details_provider.dart';
+import 'package:billing_guru/core/printing/receipt_logo.dart';
+import 'package:billing_guru/core/printing/receipt_paper_size.dart';
+import 'package:billing_guru/core/printing/receipt_printer_dialog.dart';
+import 'package:billing_guru/core/printing/receipt_template_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/widgets/copyright_banner.dart';
+import '../../../checkout/domain/sale.dart';
 import '../../data/models/sale_summary.dart';
 import '../../domain/sales_period.dart';
 import '../view_models/sales_view_model.dart';
@@ -203,6 +209,41 @@ class SaleListTile extends ConsumerWidget {
         '${twoDigits(local.hour)}:${twoDigits(local.minute)}';
   }
 
+  Future<void> _reprintReceipt(BuildContext context, WidgetRef ref) async {
+    final itemsAsync = ref.watch(saleItemsProvider(sale.id));
+
+    itemsAsync.whenData((items) async {
+      final saleData = Sale(
+        id: sale.id,
+        invoiceNumber: sale.invoiceNumber,
+        items: items,
+        subtotalCents: sale.subtotalCents,
+        discountCents: sale.discountCents,
+        taxCents: sale.taxCents,
+        totalCents: sale.totalCents,
+        paymentMethod: sale.paymentMethod,
+        createdAt: sale.createdAt,
+        syncStatus: sale.syncStatus,
+      );
+
+      final currency = ref.read(currencyProvider);
+      final template = ref.read(receiptTemplateProvider);
+      final details = await ref.read(receiptBusinessDetailsProvider.future);
+      final logo = await ref.read(receiptLogoProvider.future);
+
+      if (!context.mounted) return;
+      await showReceiptPrintDialog(
+        context,
+        paperSize: ref.read(receiptPaperSizeProvider),
+        sale: saleData,
+        currency: currency,
+        template: template,
+        businessDetails: details,
+        logo: logo,
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currency = ref.watch(currencyProvider);
@@ -221,7 +262,7 @@ class SaleListTile extends ConsumerWidget {
         ),
         isThreeLine: true,
         trailing: SizedBox(
-          width: 150,
+          width: 220,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -231,6 +272,11 @@ class SaleListTile extends ConsumerWidget {
                   currency: currency,
                 ),
                 style: Theme.of(context).textTheme.titleMedium,
+              ),
+              IconButton(
+                tooltip: 'Reprint receipt',
+                icon: const Icon(Icons.print_outlined),
+                onPressed: () => _reprintReceipt(context, ref),
               ),
               IconButton(
                 tooltip: 'View sale',
@@ -256,6 +302,41 @@ class SaleDetailsDialog extends ConsumerWidget {
   const SaleDetailsDialog({required this.sale, super.key});
 
   final SaleSummary sale;
+
+  Future<void> _reprintReceipt(BuildContext context, WidgetRef ref) async {
+    final itemsAsync = ref.watch(saleItemsProvider(sale.id));
+
+    itemsAsync.whenData((items) async {
+      final saleData = Sale(
+        id: sale.id,
+        invoiceNumber: sale.invoiceNumber,
+        items: items,
+        subtotalCents: sale.subtotalCents,
+        discountCents: sale.discountCents,
+        taxCents: sale.taxCents,
+        totalCents: sale.totalCents,
+        paymentMethod: sale.paymentMethod,
+        createdAt: sale.createdAt,
+        syncStatus: sale.syncStatus,
+      );
+
+      final currency = ref.read(currencyProvider);
+      final template = ref.read(receiptTemplateProvider);
+      final details = await ref.read(receiptBusinessDetailsProvider.future);
+      final logo = await ref.read(receiptLogoProvider.future);
+
+      if (!context.mounted) return;
+      await showReceiptPrintDialog(
+        context,
+        paperSize: ref.read(receiptPaperSizeProvider),
+        sale: saleData,
+        currency: currency,
+        template: template,
+        businessDetails: details,
+        logo: logo,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -342,6 +423,11 @@ class SaleDetailsDialog extends ConsumerWidget {
             Navigator.of(context).pop();
           },
           child: const Text('Close'),
+        ),
+        FilledButton.icon(
+          onPressed: itemsAsync.isLoading ? null : () => _reprintReceipt(context, ref),
+          icon: const Icon(Icons.print_outlined),
+          label: const Text('Reprint'),
         ),
       ],
     );
