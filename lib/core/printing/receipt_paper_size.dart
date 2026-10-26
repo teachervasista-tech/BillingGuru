@@ -27,23 +27,15 @@ extension ReceiptPaperSizeDetails on ReceiptPaperSize {
 
   PdfPageFormat get pageFormat {
     return switch (this) {
-      // Atpos H58 uses 58 mm paper with a 48 mm printable width.
-      ReceiptPaperSize.twoInch => const PdfPageFormat(
-        58 * PdfPageFormat.mm,
-        double.infinity,
-      ),
-      // 80 mm paper with a 72 mm printable width.
-      ReceiptPaperSize.threeInch => const PdfPageFormat(
-        80 * PdfPageFormat.mm,
-        double.infinity,
-      ),
+      ReceiptPaperSize.twoInch => PdfPageFormat.roll57,
+      ReceiptPaperSize.threeInch => PdfPageFormat.roll80,
     };
   }
 
   /// Blank space kept on the left and right so text stays in the printable area.
   double get horizontalMargin {
     return switch (this) {
-      ReceiptPaperSize.twoInch => 5 * PdfPageFormat.mm,
+      ReceiptPaperSize.twoInch => 3 * PdfPageFormat.mm,
       ReceiptPaperSize.threeInch => 4 * PdfPageFormat.mm,
     };
   }
