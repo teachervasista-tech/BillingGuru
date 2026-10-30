@@ -30,6 +30,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
   late final TextEditingController _stockController;
   late final TextEditingController _categoryController;
   late final TextEditingController _shortCodeController;
+  final _categoryFocusNode = FocusNode();
 
   bool _isSaving = false;
   bool _hasAddedProduct = false;
@@ -77,6 +78,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     _taxController.dispose();
     _stockController.dispose();
     _categoryController.dispose();
+    _categoryFocusNode.dispose();
     _shortCodeController.dispose();
     super.dispose();
   }
@@ -231,9 +233,70 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     return FocusTraversalOrder(order: NumericFocusOrder(order), child: child);
   }
 
+  /// Category input that suggests existing categories as the user types.
+  Widget _buildCategoryField(List<String> categories) {
+    return RawAutocomplete<String>(
+      textEditingController: _categoryController,
+      focusNode: _categoryFocusNode,
+      optionsBuilder: (textEditingValue) {
+        final query = textEditingValue.text.trim().toLowerCase();
+        return categories.where((category) {
+          final lower = category.toLowerCase();
+          return lower != query && lower.contains(query);
+        });
+      },
+      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+        return TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          scrollPhysics: const NeverScrollableScrollPhysics(),
+          decoration: const InputDecoration(
+            labelText: 'Category',
+            hintText: 'Example: Beverages',
+            prefixIcon: Icon(Icons.category_outlined),
+          ),
+          validator: _requiredValidator,
+          textInputAction: TextInputAction.next,
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(8),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 220, maxWidth: 450),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (context, index) {
+                  final option = options.elementAt(index);
+                  final highlighted =
+                      AutocompleteHighlightedOption.of(context) == index;
+                  return ListTile(
+                    dense: true,
+                    selected: highlighted,
+                    leading: const Icon(Icons.category_outlined, size: 18),
+                    title: Text(option),
+                    onTap: () => onSelected(option),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final title = widget.isEditing ? 'Edit product' : 'Add product';
+    final categories =
+        ref.watch(productViewModelProvider).asData?.value.categories ??
+        const <String>[];
 
     return AlertDialog(
       title: Text(title),
@@ -264,17 +327,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
                   const SizedBox(height: 12),
                   _ordered(
                     2,
-                    TextFormField(
-                      controller: _categoryController,
-                      scrollPhysics: const NeverScrollableScrollPhysics(),
-                      decoration: const InputDecoration(
-                        labelText: 'Category',
-                        hintText: 'Example: Beverages',
-                        prefixIcon: Icon(Icons.category_outlined),
-                      ),
-                      validator: _requiredValidator,
-                      textInputAction: TextInputAction.next,
-                    ),
+                    _buildCategoryField(categories),
                   ),
                   const SizedBox(height: 12),
                   _ordered(

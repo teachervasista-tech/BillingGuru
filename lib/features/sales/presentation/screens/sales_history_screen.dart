@@ -413,7 +413,6 @@ class SaleDetailsDialog extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Text('Payment: ${sale.paymentMethod}'),
-              Text('Status: ${sale.syncStatus}'),
             ],
           ),
         ),

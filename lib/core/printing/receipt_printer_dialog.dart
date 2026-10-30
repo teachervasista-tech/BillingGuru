@@ -116,7 +116,7 @@ class _ReceiptPrintDialogState extends State<_ReceiptPrintDialog> {
     final height = lines * 11.0 + (logoImage != null ? 76 : 0) + 48;
     doc.addPage(
       pw.Page(
-        pageFormat: PdfPageFormat(widget.paperSize.pageFormat.width, height),
+        pageFormat: PdfPageFormat(widget.paperSize.printableWidth, height),
         margin: pw.EdgeInsets.symmetric(
           horizontal: widget.paperSize.horizontalMargin,
           vertical: 16,

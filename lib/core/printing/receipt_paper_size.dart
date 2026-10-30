@@ -32,18 +32,29 @@ extension ReceiptPaperSizeDetails on ReceiptPaperSize {
     };
   }
 
-  /// Blank space kept on the left and right so text stays in the printable area.
-  double get horizontalMargin {
+  /// Width the print head can actually reach. Thermal drivers map the page
+  /// onto this area and clip anything wider, so the receipt is laid out on a
+  /// page of exactly this width rather than the full paper width.
+  double get printableWidth {
     return switch (this) {
-      ReceiptPaperSize.twoInch => 3 * PdfPageFormat.mm,
-      ReceiptPaperSize.threeInch => 4 * PdfPageFormat.mm,
+      ReceiptPaperSize.twoInch => 48 * PdfPageFormat.mm,
+      ReceiptPaperSize.threeInch => 72 * PdfPageFormat.mm,
     };
   }
 
-  /// Courier glyphs are 0.6 em wide; sized so [columns] fill the printable width.
+  /// Safety gap inside the printable area on the left and right.
+  double get horizontalMargin {
+    return switch (this) {
+      ReceiptPaperSize.twoInch => 1.5 * PdfPageFormat.mm,
+      ReceiptPaperSize.threeInch => 2 * PdfPageFormat.mm,
+    };
+  }
+
+  /// Courier glyphs are 0.6 em wide; sized so [columns] fill the space
+  /// between the margins.
   double get fontSize {
-    final printable = pageFormat.width - 2 * horizontalMargin;
-    return printable / (columns * 0.6);
+    final usable = printableWidth - 2 * horizontalMargin;
+    return usable / (columns * 0.6);
   }
 }
 

@@ -177,6 +177,24 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
     );
   }
 
+  /// Reuses the spelling of an existing category that matches [category]
+  /// ignoring case, so "beverages" and "Beverages" don't become two categories.
+  Future<String> _normalizeCategory(String category) async {
+    final trimmed = category.trim();
+    final lower = trimmed.toLowerCase();
+    final existing = await ref
+        .read(productRepositoryProvider)
+        .getActiveCategories();
+
+    for (final candidate in existing) {
+      if (candidate.trim().toLowerCase() == lower) {
+        return candidate;
+      }
+    }
+
+    return trimmed;
+  }
+
   Future<bool> addProduct({
     required String shortCode,
     required String barcode,
@@ -194,7 +212,7 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
       shortCode: shortCode.trim().toUpperCase(),
       barcode: barcode.trim(),
       name: name.trim(),
-      category: category.trim(),
+      category: await _normalizeCategory(category),
       priceCents: priceCents,
       taxRate: taxRate,
       stockQuantity: stockQuantity,
@@ -228,7 +246,7 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
       shortCode: shortCode.trim().toUpperCase(),
       barcode: barcode.trim(),
       name: name.trim(),
-      category: category.trim(),
+      category: await _normalizeCategory(category),
       priceCents: priceCents,
       taxRate: taxRate,
       stockQuantity: stockQuantity,
