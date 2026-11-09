@@ -103,9 +103,11 @@ class ReceiptFormatter {
       return [
         for (var i = 0; i < height; i++)
           cell(cols[0], i).padRight(nameWidth) +
-              cell(cols[1], i).padLeft(qtyWidth) +
-              cell(cols[2], i).padLeft(priceWidth) +
-              cell(cols[3], i).padLeft(totalWidth),
+              (i == height - 1
+                  ? cell(cols[1], i).padLeft(qtyWidth) +
+                      cell(cols[2], i).padLeft(priceWidth) +
+                      cell(cols[3], i).padLeft(totalWidth)
+                  : ''.padLeft(qtyWidth + priceWidth + totalWidth)),
       ].join('\n');
     }
 
