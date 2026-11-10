@@ -103,7 +103,7 @@ class ReceiptFormatter {
       return [
         for (var i = 0; i < height; i++)
           cell(cols[0], i).padRight(nameWidth) +
-              (i == height - 1
+              (i == 0
                   ? cell(cols[1], i).padLeft(qtyWidth) +
                       cell(cols[2], i).padLeft(priceWidth) +
                       cell(cols[3], i).padLeft(totalWidth)
