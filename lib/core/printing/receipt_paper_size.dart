@@ -25,6 +25,9 @@ extension ReceiptPaperSizeDetails on ReceiptPaperSize {
   int get priceWidth => this == ReceiptPaperSize.twoInch ? 8 : 10;
   int get totalWidth => this == ReceiptPaperSize.twoInch ? 9 : 11;
 
+  /// Narrowest item name column before names move to their own lines.
+  int get minNameWidth => this == ReceiptPaperSize.twoInch ? 8 : 12;
+
   PdfPageFormat get pageFormat {
     return switch (this) {
       ReceiptPaperSize.twoInch => PdfPageFormat.roll57,

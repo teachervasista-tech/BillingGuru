@@ -56,23 +56,6 @@ class ReceiptFormatter {
       decimalDigits: currency.decimalDigits,
     );
     String amount(int cents) => numberFormat.format(cents / 100);
-    String center(String text) {
-      final padding = (width - text.length) ~/ 2;
-      return text.length >= width ? text : '${' ' * padding}$text';
-    }
-
-    String row(String left, String right) {
-      final gap = width - left.length - right.length;
-      return gap > 0 ? '$left${' ' * gap}$right' : '$left $right';
-    }
-
-    final rule = '-' * width;
-
-    // Fixed-width table columns: item | qty | price | total.
-    final qtyWidth = paperSize.qtyWidth;
-    final priceWidth = paperSize.priceWidth;
-    final totalWidth = paperSize.totalWidth;
-    final nameWidth = width - qtyWidth - priceWidth - totalWidth;
 
     // Splits text into chunks of at most [max] characters, preferring spaces.
     List<String> wrap(String text, int max) {
@@ -88,26 +71,79 @@ class ReceiptFormatter {
       return lines;
     }
 
-    // Each cell wraps inside its own fixed-width column. Text is left
-    // aligned; numeric columns are right aligned.
-    String tableRow(String name, String qty, String price, String total) {
-      final cols = [
-        wrap(name, nameWidth - 1),
-        wrap(qty, qtyWidth),
-        wrap(price, priceWidth),
-        wrap(total, totalWidth),
-      ];
-      final height = cols.map((c) => c.length).reduce((a, b) => a > b ? a : b);
-      String cell(List<String> lines, int i) =>
-          i < lines.length ? lines[i] : '';
+    // Centers text, wrapping it first so no line runs past the paper width.
+    String center(String text) => wrap(text, width)
+        .map((line) => '${' ' * ((width - line.length) ~/ 2)}$line')
+        .join('\n');
+
+    // Label on the left, value on the right. When both do not fit on one
+    // line the label wraps and the value goes right aligned underneath.
+    String row(String left, String right) {
+      final gap = width - left.length - right.length;
+      if (gap > 0) return '$left${' ' * gap}$right';
+      return [...wrap(left, width), right.padLeft(width)].join('\n');
+    }
+
+    final rule = '-' * width;
+
+    // Item table: name | qty | price | total. The numeric columns start at
+    // the paper size defaults and grow to fit the widest value on this
+    // receipt, so amounts are never truncated or run into each other. The
+    // name column takes whatever width remains.
+    final items = [
+      for (final item in sale.items)
+        (
+          name: item.productName?.trim().isNotEmpty == true
+              ? item.productName!.trim()
+              : item.productId,
+          qty: '${item.quantity}',
+          price: amount(item.unitPriceCents),
+          total: amount(item.totalCents),
+        ),
+    ];
+    int widest(int min, Iterable<String> values, {int gap = 1}) => values
+        .map((value) => value.length + gap)
+        .fold(min, (a, b) => a > b ? a : b);
+    // The name column already leaves a one character gap before qty.
+    final qtyWidth = widest(
+      paperSize.qtyWidth,
+      items.map((i) => i.qty),
+      gap: 0,
+    );
+    final priceWidth = widest(paperSize.priceWidth, items.map((i) => i.price));
+    final totalWidth = widest(paperSize.totalWidth, items.map((i) => i.total));
+    final nameWidth = width - qtyWidth - priceWidth - totalWidth;
+    // With extremely large amounts the name column would become unreadable;
+    // the name then gets its own full-width lines above the numbers.
+    final stacked = nameWidth < paperSize.minNameWidth;
+
+    // Left-aligned first cell, right-aligned remaining cells. Only the first
+    // cell wraps; the other cells always sit on the first line.
+    String tableLine(List<String> cells, List<int> widths) {
+      final first = wrap(cells.first, widths.first - 1);
+      final numbers = [
+        for (var i = 1; i < cells.length; i++) cells[i].padLeft(widths[i]),
+      ].join();
       return [
-        for (var i = 0; i < height; i++)
-          cell(cols[0], i).padRight(nameWidth) +
-              (i == 0
-                  ? cell(cols[1], i).padLeft(qtyWidth) +
-                      cell(cols[2], i).padLeft(priceWidth) +
-                      cell(cols[3], i).padLeft(totalWidth)
-                  : ''.padLeft(qtyWidth + priceWidth + totalWidth)),
+        first.first.padRight(widths.first) + numbers,
+        ...first.skip(1),
+      ].join('\n');
+    }
+
+    String tableRow(String name, String qty, String price, String total) {
+      if (!stacked) {
+        return tableLine(
+          [name, qty, price, total],
+          [nameWidth, qtyWidth, priceWidth, totalWidth],
+        );
+      }
+      final numbersWidth = qtyWidth + priceWidth + totalWidth;
+      return [
+        ...wrap(name, width),
+        ' ' * (width - numbersWidth) +
+            qty.padLeft(qtyWidth) +
+            price.padLeft(priceWidth) +
+            total.padLeft(totalWidth),
       ].join('\n');
     }
 
@@ -149,27 +185,15 @@ class ReceiptFormatter {
         DateFormat('HH:mm:ss').format(sale.createdAt),
       ),
     );
-    receipt.writeln('Invoice: ${sale.invoiceNumber}');
+    receipt.writeln(wrap('Invoice: ${sale.invoiceNumber}', width).join('\n'));
     receipt.writeln(rule);
     receipt.writeln(tableRow('Item', 'Qty', 'Price', 'Total'));
     receipt.writeln(rule);
 
-    for (final item in sale.items) {
-      final name = item.productName?.trim().isNotEmpty == true
-          ? item.productName!.trim()
-          : item.productId;
-      final price = amount(item.unitPriceCents);
-      final total = amount(item.totalCents);
-
-      if (template == ReceiptTemplate.detailed) {
-        for (final line in wrap(name, width)) {
-          receipt.writeln(line);
-        }
-        receipt.writeln(tableRow('', '${item.quantity}', price, total));
-        continue;
-      }
-
-      receipt.writeln(tableRow(name, '${item.quantity}', price, total));
+    // Every template keeps qty, price and total on the first line of the
+    // item name; long names wrap below inside the name column.
+    for (final item in items) {
+      receipt.writeln(tableRow(item.name, item.qty, item.price, item.total));
     }
 
     receipt.writeln(rule);
@@ -187,10 +211,21 @@ class ReceiptFormatter {
 
     if (template == ReceiptTemplate.detailed) {
       receipt.writeln();
-      receipt.writeln(tableRow('Tax rate', '', 'Net', 'Tax'));
-      receipt.writeln(
-        tableRow('$rate%', '', amount(net), amount(sale.taxCents)),
-      );
+      // Own column widths so the breakdown never truncates the amounts.
+      final netText = amount(net);
+      final taxText = amount(sale.taxCents);
+      final netWidth = widest(paperSize.priceWidth, [netText]);
+      final taxWidth = widest(paperSize.totalWidth, [taxText]);
+      final rateWidth = width - netWidth - taxWidth;
+      if (rateWidth > 'Tax rate'.length) {
+        final widths = [rateWidth, netWidth, taxWidth];
+        receipt.writeln(tableLine(['Tax rate', 'Net', 'Tax'], widths));
+        receipt.writeln(tableLine(['$rate%', netText, taxText], widths));
+      } else {
+        receipt.writeln(row('Tax rate', '$rate%'));
+        receipt.writeln(row('Net', netText));
+        receipt.writeln(row('Tax', taxText));
+      }
     }
 
     if (!compact) receipt.writeln();
