@@ -61,6 +61,8 @@ class CheckoutRepository {
         'payment_method': sale.paymentMethod.name,
         'created_at': sale.createdAt.toIso8601String(),
         'sync_status': sale.syncStatus,
+        'customer_id': sale.customerId,
+        'user_id': sale.userId,
       }, conflictAlgorithm: ConflictAlgorithm.abort);
 
       for (final item in sale.items) {
@@ -71,6 +73,7 @@ class CheckoutRepository {
           'quantity': item.quantity,
           'unit_price_cents': item.unitPriceCents,
           'total_cents': item.totalCents,
+          'unit_cost_cents': item.unitCostCents,
         }, conflictAlgorithm: ConflictAlgorithm.abort);
 
         await transaction.rawUpdate(

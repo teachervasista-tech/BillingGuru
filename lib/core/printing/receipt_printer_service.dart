@@ -1,8 +1,6 @@
 import 'package:billing_guru/core/currency/currency.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-import 'receipt_business_details_provider.dart';
 import 'receipt_paper_size.dart';
 import '../../features/checkout/domain/payment.dart';
 import '../../features/checkout/domain/sale.dart';
@@ -17,15 +15,17 @@ abstract class ReceiptPrinterService {
 }
 
 class ReceiptPrinterPreviewService implements ReceiptPrinterService {
+  const ReceiptPrinterPreviewService({this.businessDetails = ''});
+
+  /// Header lines (see `receiptBusinessDetailsProvider`).
+  final String businessDetails;
+
   @override
   Future<void> printReceipt(
     Sale sale,
     AppCurrency currency, {
     ReceiptTemplate template = ReceiptTemplate.classic,
   }) async {
-    final businessDetails = (await rootBundle.loadString(
-      receiptBusinessDetailsAssetPath,
-    )).trim();
     // ignore: avoid_print
     print(
       ReceiptFormatter.format(
@@ -72,9 +72,10 @@ class ReceiptFormatter {
     }
 
     // Centers text, wrapping it first so no line runs past the paper width.
-    String center(String text) => wrap(text, width)
-        .map((line) => '${' ' * ((width - line.length) ~/ 2)}$line')
-        .join('\n');
+    String center(String text) => wrap(
+      text,
+      width,
+    ).map((line) => '${' ' * ((width - line.length) ~/ 2)}$line').join('\n');
 
     // Label on the left, value on the right. When both do not fit on one
     // line the label wraps and the value goes right aligned underneath.
@@ -186,6 +187,10 @@ class ReceiptFormatter {
       ),
     );
     receipt.writeln(wrap('Invoice: ${sale.invoiceNumber}', width).join('\n'));
+    final customer = sale.customerName?.trim();
+    if (customer != null && customer.isNotEmpty) {
+      receipt.writeln(wrap('Customer: $customer', width).join('\n'));
+    }
     receipt.writeln(rule);
     receipt.writeln(tableRow('Item', 'Qty', 'Price', 'Total'));
     receipt.writeln(rule);

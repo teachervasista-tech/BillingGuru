@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../../core/database/app_database.dart';
+import '../../../../core/database/database_provider.dart';
 import '../../../../core/tax/tax_rate_provider.dart';
 import '../../../cart/domain/cart_item.dart';
 import '../../../cart/presentation/view_models/cart_view_model.dart';
+import '../../../auth/presentation/auth_providers.dart';
+import '../../../customers/presentation/customer_providers.dart';
 import '../../../sales/presentation/view_models/sales_view_model.dart';
 import '../../../dashboard/presentation/view_models/dashboard_view_model.dart';
 import '../../../reports/presentation/providers/report_providers.dart';
@@ -15,7 +17,7 @@ import '../../domain/sale.dart';
 import '../../domain/sale_item.dart';
 
 final checkoutRepositoryProvider = Provider<CheckoutRepository>((ref) {
-  return CheckoutRepository(database: AppDatabase.instance);
+  return CheckoutRepository(database: ref.watch(appDatabaseProvider));
 });
 
 final checkoutViewModelProvider =
@@ -70,12 +72,13 @@ class CheckoutViewModel extends Notifier<CheckoutState> {
   }
 
   String _cartSignature(List<CartItem> cart) {
-    return cart
+    final items = cart
         .map(
           (item) =>
               '${item.product.id}:${item.quantity}:${item.product.priceCents}',
         )
         .join('|');
+    return '$items#${ref.read(selectedCustomerProvider)?.id ?? ''}';
   }
 
   /// Saves the cart as a sale the first time it is called for a given cart
@@ -98,6 +101,8 @@ class CheckoutViewModel extends Notifier<CheckoutState> {
     ref.invalidate(dashboardViewModelProvider);
     ref.invalidate(salesViewModelProvider);
     ref.invalidate(reportProvider);
+    ref.invalidate(customerStatsProvider);
+    ref.invalidate(customerSalesProvider);
     return sale;
   }
 
@@ -158,6 +163,7 @@ class CheckoutViewModel extends Notifier<CheckoutState> {
         productName: cartItem.product.name,
         quantity: cartItem.quantity,
         unitPriceCents: cartItem.product.priceCents,
+        unitCostCents: cartItem.product.costPriceCents,
         totalCents: cartItem.totalCents,
       );
     }).toList();
@@ -168,6 +174,7 @@ class CheckoutViewModel extends Notifier<CheckoutState> {
     );
 
     final taxCents = subtotalCents * ref.read(defaultTaxRateProvider) ~/ 100;
+    final customer = ref.read(selectedCustomerProvider);
 
     return Sale(
       id: saleId,
@@ -180,6 +187,9 @@ class CheckoutViewModel extends Notifier<CheckoutState> {
       paymentMethod: paymentMethod,
       createdAt: now,
       syncStatus: 'pending',
+      customerId: customer?.id,
+      customerName: customer?.name,
+      userId: ref.read(currentUserProvider)?.id,
     );
   }
 

@@ -1,45 +1,61 @@
+import 'dart:io';
+
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
+import 'migrations.dart';
+
 class AppDatabase {
-  AppDatabase._internal();
+  AppDatabase._internal() : _factory = null, _path = null;
+
+  /// Creates a database bound to an explicit [factory] and [path], e.g.
+  /// `AppDatabase.forTesting(databaseFactoryFfi, inMemoryDatabasePath)`.
+  AppDatabase.forTesting(DatabaseFactory factory, String path)
+    : _factory = factory,
+      _path = path;
 
   static final AppDatabase instance = AppDatabase._internal();
 
-  static const String _databaseName = 'pos_billing.db';
-  static const int _databaseVersion = 2;
+  static const String databaseName = 'pos_billing.db';
+
+  /// Bump together with a new entry in [appMigrations].
+  static int get schemaVersion => latestSchemaVersion;
+
+  final DatabaseFactory? _factory;
+  final String? _path;
 
   Database? _database;
+
+  DatabaseFactory get _dbFactory => _factory ?? databaseFactory;
+
+  /// Absolute path of the database file (used by backup/restore).
+  Future<String> get databasePath async {
+    final explicit = _path;
+    if (explicit != null) return explicit;
+    return join(await _dbFactory.getDatabasesPath(), databaseName);
+  }
 
   Future<Database> get database async {
     final existingDatabase = _database;
 
     if (existingDatabase != null && existingDatabase.isOpen) {
-      //debugPrint('[Reports] Existing  database');
       return existingDatabase;
     }
-    //debugPrint('[Reports] Opening database');
     _database = await _openDatabase();
-
-    //debugPrint('[Reports] Database opened');
     return _database!;
   }
 
   Future<Database> _openDatabase() async {
-    final databaseDirectory = await getDatabasesPath();
-
-    final databasePath = join(databaseDirectory, _databaseName);
-
-    return openDatabase(
-      databasePath,
-      version: _databaseVersion,
-      singleInstance: true,
-      onConfigure: _onConfigure,
-      onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
-      onOpen: (db) async {
-        await _ensureReferenceData(db);
-      },
+    return _dbFactory.openDatabase(
+      await databasePath,
+      options: OpenDatabaseOptions(
+        version: schemaVersion,
+        singleInstance: _path == null,
+        onConfigure: _onConfigure,
+        onCreate: _onCreate,
+        onUpgrade: _onUpgrade,
+        onOpen: _insertInitialProducts,
+      ),
     );
   }
 
@@ -47,159 +63,19 @@ class AppDatabase {
     await db.execute('PRAGMA foreign_keys = ON');
   }
 
+  /// Fresh installs build the baseline (v2) schema, then run every later
+  /// migration, so new and upgraded databases always end up identical.
   Future<void> _onCreate(Database db, int version) async {
-    await _createProductsTable(db);
-    await _createSalesTable(db);
-    await _createSaleItemsTable(db);
-    await _createStockMovementsTable(db);
-    await _insertInitialProducts(db);
-  }
-
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    await db.transaction((transaction) async {
-      if (oldVersion < 2) {
-        final columns = await transaction.rawQuery(
-          'PRAGMA table_info(products)',
-        );
-        final hasCategory = columns.any(
-          (column) => column['name'] == 'category',
-        );
-
-        if (!hasCategory) {
-          await transaction.execute('''
-            ALTER TABLE products
-            ADD COLUMN category TEXT NOT NULL DEFAULT 'Other'
-          ''');
-        }
-
-        await transaction.execute('PRAGMA defer_foreign_keys = ON');
-        await _makeBarcodeOptional(transaction);
-      }
-
-      if (oldVersion < 3) {
-        await transaction.execute('''
-          CREATE TABLE IF NOT EXISTS stock_movements (
-            id TEXT PRIMARY KEY,
-            product_id TEXT NOT NULL,
-            movement_type TEXT NOT NULL,
-            quantity INTEGER NOT NULL,
-            reference_id TEXT,
-            created_at TEXT NOT NULL,
-            FOREIGN KEY (product_id)
-              REFERENCES products (id)
-          )
-        ''');
-      }
+    await db.transaction((txn) async {
+      await createBaselineSchema(txn);
+      await runMigrations(txn, from: baselineSchemaVersion, to: version);
     });
   }
 
-  Future<void> _createProductsTable(Database db) async {
-    await db.execute('''
-    CREATE TABLE products (
-      id TEXT PRIMARY KEY,
-      short_code TEXT NOT NULL UNIQUE,
-      barcode TEXT,
-      name TEXT NOT NULL,
-      category TEXT NOT NULL DEFAULT 'Other',
-      image_path TEXT,
-      price_cents INTEGER NOT NULL,
-      tax_rate INTEGER NOT NULL,
-      stock_quantity INTEGER NOT NULL,
-      is_active INTEGER NOT NULL DEFAULT 1
-    )
-  ''');
-
-    await db.execute('''
-      CREATE UNIQUE INDEX idx_products_barcode_unique
-      ON products (barcode)
-      WHERE barcode IS NOT NULL AND barcode != ''
-    ''');
-  }
-
-  Future<void> _makeBarcodeOptional(Transaction transaction) async {
-    await transaction.execute('''
-      CREATE TABLE products_new (
-        id TEXT PRIMARY KEY,
-        short_code TEXT NOT NULL UNIQUE,
-        barcode TEXT,
-        name TEXT NOT NULL,
-        category TEXT NOT NULL DEFAULT 'Other',
-        image_path TEXT,
-        price_cents INTEGER NOT NULL,
-        tax_rate INTEGER NOT NULL,
-        stock_quantity INTEGER NOT NULL,
-        is_active INTEGER NOT NULL DEFAULT 1
-      )
-    ''');
-
-    await transaction.execute('''
-      INSERT INTO products_new (
-        id, short_code, barcode, name, category, image_path,
-        price_cents, tax_rate, stock_quantity, is_active
-      )
-      SELECT
-        id, short_code, barcode, name, category, image_path,
-        price_cents, tax_rate, stock_quantity, is_active
-      FROM products
-    ''');
-
-    await transaction.execute('DROP TABLE products');
-    await transaction.execute('ALTER TABLE products_new RENAME TO products');
-    await transaction.execute('''
-      CREATE UNIQUE INDEX idx_products_barcode_unique
-      ON products (barcode)
-      WHERE barcode IS NOT NULL AND barcode != ''
-    ''');
-    await transaction.execute('PRAGMA defer_foreign_keys = OFF');
-  }
-
-  Future<void> _createSalesTable(Database db) async {
-    await db.execute('''
-      CREATE TABLE sales (
-        id TEXT PRIMARY KEY,
-        invoice_number TEXT NOT NULL UNIQUE,
-        subtotal_cents INTEGER NOT NULL,
-        discount_cents INTEGER NOT NULL,
-        tax_cents INTEGER NOT NULL,
-        total_cents INTEGER NOT NULL,
-        payment_method TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        sync_status TEXT NOT NULL
-      )
-    ''');
-  }
-
-  Future<void> _createSaleItemsTable(Database db) async {
-    await db.execute('''
-      CREATE TABLE sale_items (
-        id TEXT PRIMARY KEY,
-        sale_id TEXT NOT NULL,
-        product_id TEXT NOT NULL,
-        quantity INTEGER NOT NULL,
-        unit_price_cents INTEGER NOT NULL,
-        total_cents INTEGER NOT NULL,
-        FOREIGN KEY (sale_id)
-          REFERENCES sales (id)
-          ON DELETE CASCADE,
-        FOREIGN KEY (product_id)
-          REFERENCES products (id)
-      )
-    ''');
-  }
-
-  Future<void> _createStockMovementsTable(Database db) async {
-    await db.execute('''
-      CREATE TABLE stock_movements (
-        id TEXT PRIMARY KEY,
-        product_id TEXT NOT NULL,
-        movement_type TEXT NOT NULL,
-        quantity INTEGER NOT NULL,
-        reference_id TEXT,
-        created_at TEXT NOT NULL,
-        FOREIGN KEY (product_id)
-          REFERENCES products (id)
-      )
-    ''');
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    await db.transaction((txn) async {
+      await runMigrations(txn, from: oldVersion, to: newVersion);
+    });
   }
 
   Future<void> _insertInitialProducts(Database db) async {
@@ -213,34 +89,18 @@ class AppDatabase {
       return;
     }
 
-    final products = [
-      {
-        'id': 'Test-001',
-        'short_code': 'COF001',
-        'barcode': '890000000001',
-        'name': 'TestCoffee',
-        'category': 'TestBeverages',
-        'price_cents': 299,
-        'image_path': null,
-        'tax_rate': 19,
-        'stock_quantity': 50,
-        'is_active': 1,
-      },
-    ];
-
-    await db.transaction((transaction) async {
-      for (final product in products) {
-        await transaction.insert(
-          'products',
-          product,
-          conflictAlgorithm: ConflictAlgorithm.ignore,
-        );
-      }
-    });
-  }
-
-  Future<void> _ensureReferenceData(Database db) async {
-    await _insertInitialProducts(db);
+    await db.insert('products', {
+      'id': 'Test-001',
+      'short_code': 'COF001',
+      'barcode': '890000000001',
+      'name': 'TestCoffee',
+      'category': 'TestBeverages',
+      'price_cents': 299,
+      'image_path': null,
+      'tax_rate': 19,
+      'stock_quantity': 50,
+      'is_active': 1,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }
 
   Future<void> close() async {
@@ -253,12 +113,29 @@ class AppDatabase {
     _database = null;
   }
 
-  Future<void> deleteDatabaseForDevelopment() async {
-    final databaseDirectory = await getDatabasesPath();
-
-    final databasePath = join(databaseDirectory, _databaseName);
-
+  /// Replaces the database file with [source] (e.g. from a backup). The next
+  /// access reopens it and runs any pending migrations.
+  Future<void> replaceWith(File source) async {
+    final path = await databasePath;
     await close();
-    await deleteDatabase(databasePath);
+    for (final suffix in ['', '-wal', '-shm', '-journal']) {
+      final file = File('$path$suffix');
+      if (await file.exists()) await file.delete();
+    }
+    await source.copy(path);
+    await database;
+  }
+
+  /// Writes a consistent copy of the open database to [targetPath].
+  Future<void> snapshotTo(String targetPath) async {
+    final db = await database;
+    final escaped = targetPath.replaceAll("'", "''");
+    await db.execute("VACUUM INTO '$escaped'");
+  }
+
+  Future<void> deleteDatabaseForDevelopment() async {
+    final path = await databasePath;
+    await close();
+    await _dbFactory.deleteDatabase(path);
   }
 }

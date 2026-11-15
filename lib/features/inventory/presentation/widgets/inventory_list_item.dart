@@ -1,5 +1,7 @@
 import 'package:billing_guru/core/currency/currency_formatter.dart';
 import 'package:billing_guru/core/currency/currency_provider.dart';
+import 'package:billing_guru/core/settings/app_settings_provider.dart';
+import 'package:billing_guru/features/auth/presentation/auth_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -14,7 +16,9 @@ class InventoryListItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isLowStock = item.isLowStock();
+    final isLowStock = item.isLowStock(
+      threshold: ref.watch(lowStockThresholdProvider),
+    );
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -32,7 +36,8 @@ class InventoryListItem extends ConsumerWidget {
         ),
         subtitle: Text(
           'Barcode: ${item.barcode}\n'
-          'Price: ${formatMoney(ref, item.priceCents)}',
+          'Price: ${formatMoney(ref, item.priceCents)}'
+          '${item.costPriceCents > 0 ? '  ·  Cost: ${formatMoney(ref, item.costPriceCents)}' : ''}',
         ),
         isThreeLine: true,
         trailing: SizedBox(
@@ -58,13 +63,14 @@ class InventoryListItem extends ConsumerWidget {
                   ),
                 ],
               ),
-              IconButton(
-                tooltip: 'Adjust stock',
-                icon: const Icon(Icons.tune),
-                onPressed: () {
-                  _adjustStock(context, ref);
-                },
-              ),
+              if (ref.watch(canProvider(Permission.manageProducts)))
+                IconButton(
+                  tooltip: 'Adjust stock',
+                  icon: const Icon(Icons.tune),
+                  onPressed: () {
+                    _adjustStock(context, ref);
+                  },
+                ),
             ],
           ),
         ),
@@ -85,6 +91,7 @@ class InventoryListItem extends ConsumerWidget {
         return StockAdjustmentDialog(
           productName: item.name,
           currentStock: item.stockQuantity,
+          currentCostCents: item.costPriceCents,
         );
       },
     );
@@ -99,6 +106,10 @@ class InventoryListItem extends ConsumerWidget {
       await viewModel.increaseStock(
         productId: item.productId,
         quantity: result.quantity,
+        unitCostCents: result.unitCostCents,
+        supplier: result.supplier,
+        recordExpense: result.recordExpense,
+        paymentMethod: result.paymentMethod,
       );
     } else {
       await viewModel.decreaseStock(

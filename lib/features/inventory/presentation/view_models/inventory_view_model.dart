@@ -1,13 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/database/app_database.dart';
+import '../../../../core/database/database_provider.dart';
+import '../../../../core/settings/app_settings_provider.dart';
+import '../../../checkout/domain/payment.dart';
+import '../../../expenses/presentation/expense_providers.dart';
 import '../../data/models/inventory_item.dart';
 import '../../data/repositories/inventory_repository.dart';
 import '../../data/services/inventory_local_service.dart';
 
 final inventoryRepositoryProvider = Provider<InventoryRepository>((ref) {
   return InventoryRepository(
-    localService: InventoryLocalService(database: AppDatabase.instance),
+    localService: InventoryLocalService(
+      database: ref.watch(appDatabaseProvider),
+    ),
   );
 });
 
@@ -35,7 +40,7 @@ class InventoryState {
 }
 
 class InventoryViewModel extends AsyncNotifier<InventoryState> {
-  static const int lowStockThreshold = 10;
+  int get lowStockThreshold => ref.read(lowStockThresholdProvider);
 
   @override
   Future<InventoryState> build() async {
@@ -121,11 +126,23 @@ class InventoryViewModel extends AsyncNotifier<InventoryState> {
   Future<bool> increaseStock({
     required String productId,
     required int quantity,
+    int? unitCostCents,
+    String? supplier,
+    bool recordExpense = false,
+    PaymentMethod paymentMethod = PaymentMethod.cash,
   }) async {
     final repository = ref.read(inventoryRepositoryProvider);
 
     try {
-      await repository.increaseStock(productId: productId, quantity: quantity);
+      await repository.increaseStock(
+        productId: productId,
+        quantity: quantity,
+        unitCostCents: unitCostCents,
+        supplier: supplier,
+        recordExpense: recordExpense,
+        paymentMethod: paymentMethod,
+      );
+      if (recordExpense) invalidateExpenseData(ref);
 
       final refreshedState = await _loadState();
 

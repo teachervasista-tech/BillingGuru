@@ -1,4 +1,4 @@
-import 'package:billing_guru/core/config/app_features.dart';
+import 'package:billing_guru/core/settings/app_settings_provider.dart';
 import 'package:billing_guru/core/currency/currency_provider.dart';
 import 'package:billing_guru/core/currency/currency.dart';
 import 'package:billing_guru/core/tax/tax_rate_provider.dart';
@@ -16,15 +16,109 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SettingsScreen extends StatelessWidget {
+import '../../../expenses/presentation/widgets/expense_categories_tab.dart';
+import '../../../auth/presentation/auth_providers.dart';
+import '../../../auth/presentation/widgets/users_settings_tab.dart';
+import '../../../products/presentation/widgets/product_categories_tab.dart';
+import '../widgets/business_settings_tab.dart';
+import '../widgets/data_settings_tab.dart';
+import '../widgets/modules_settings_tab.dart';
+import '../widgets/receipt_logo_card.dart';
+
+/// A Settings tab: label, icon, content and who may see it.
+class SettingsTab {
+  const SettingsTab(this.label, this.icon, this.content, this.permission);
+
+  final String label;
+  final IconData icon;
+  final Widget content;
+  final Permission permission;
+}
+
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final showPayments = AppFeatures.instance.checkoutEnabled;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final features = ref.watch(appFeaturesProvider);
+    final user = ref.watch(currentUserProvider);
+    const system = Permission.configureSystem;
+    final all = [
+      // Installer: system setup.
+      const SettingsTab(
+        'Business',
+        Icons.storefront_outlined,
+        BusinessSettingsTab(),
+        system,
+      ),
+      // Installer and admin.
+      const SettingsTab(
+        'Tax',
+        Icons.percent,
+        _TaxAndCurrencyTab(),
+        Permission.manageTax,
+      ),
+      const SettingsTab(
+        'Printer',
+        Icons.receipt_long_outlined,
+        _PrinterSettingsTab(),
+        system,
+      ),
+      if (features.checkoutEnabled)
+        const SettingsTab(
+          'Payment options',
+          Icons.payments_outlined,
+          _PaymentOptionsTab(),
+          system,
+        ),
+      const SettingsTab(
+        'Modules',
+        Icons.apps_outlined,
+        ModulesSettingsTab(),
+        system,
+      ),
+      const SettingsTab(
+        'Data',
+        Icons.storage_outlined,
+        DataSettingsTab(),
+        system,
+      ),
+      // Installer and admin: accounts.
+      const SettingsTab(
+        'Users',
+        Icons.group_outlined,
+        UsersSettingsTab(),
+        Permission.manageUsers,
+      ),
+      // Admin: catalog and expense structure.
+      const SettingsTab(
+        'Product categories',
+        Icons.label_outline,
+        ProductCategoriesTab(),
+        Permission.manageCategories,
+      ),
+      if (features.expensesEnabled)
+        const SettingsTab(
+          'Expense categories',
+          Icons.category_outlined,
+          ExpenseCategoriesTab(),
+          Permission.manageCategories,
+        ),
+    ];
+    final tabs = [
+      for (final tab in all)
+        if (user?.can(tab.permission) ?? false) tab,
+    ];
+    if (tabs.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Settings')),
+        body: const Center(child: Text('No settings are available to you.')),
+      );
+    }
 
     return DefaultTabController(
-      length: showPayments ? 3 : 2,
+      key: ValueKey(tabs.map((t) => t.label).join()),
+      length: tabs.length,
       child: Scaffold(
         appBar: AppBar(title: const Text('Settings')),
         body: Column(
@@ -42,27 +136,15 @@ class SettingsScreen extends StatelessWidget {
                   isScrollable: true,
                   tabAlignment: TabAlignment.start,
                   tabs: [
-                    const Tab(icon: Icon(Icons.currency_rupee), text: 'Tax'),
-                    const Tab(
-                      icon: Icon(Icons.receipt_long_outlined),
-                      text: 'Printer',
-                    ),
-                    if (showPayments)
-                      const Tab(
-                        icon: Icon(Icons.payments_outlined),
-                        text: 'Payment options',
-                      ),
+                    for (final tab in tabs)
+                      Tab(icon: Icon(tab.icon), text: tab.label),
                   ],
                 ),
               ),
             ),
             Expanded(
               child: TabBarView(
-                children: [
-                  const _TaxAndCurrencyTab(),
-                  const _PrinterSettingsTab(),
-                  if (showPayments) const _PaymentOptionsTab(),
-                ],
+                children: [for (final tab in tabs) tab.content],
               ),
             ),
           ],
@@ -469,6 +551,8 @@ class _PrinterSettingsTabState extends ConsumerState<_PrinterSettingsTab> {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
+        const ReceiptLogoCard(),
+        const SizedBox(height: 16),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(20),

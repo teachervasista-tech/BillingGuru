@@ -3,7 +3,11 @@ import 'package:billing_guru/core/currency/currency_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/settings/app_settings_provider.dart';
+import '../../../auth/presentation/auth_providers.dart';
+import '../../../expenses/presentation/widgets/category_spend_card.dart';
 import '../providers/report_providers.dart';
+import 'profit_loss_card.dart';
 import 'daily_sales_card.dart';
 import 'low_stock_card.dart';
 import 'payment_methods_card.dart';
@@ -34,6 +38,9 @@ class _ReportsDashboardSectionState
   @override
   Widget build(BuildContext context) {
     final selectedCurrency = ref.watch(currencyProvider);
+    final canSeeProfit = ref.watch(canProvider(Permission.viewReports));
+    final expensesEnabled =
+        ref.watch(appFeaturesProvider).expensesEnabled && canSeeProfit;
 
     final filter = ReportFilter(type: _periodType);
 
@@ -87,6 +94,20 @@ class _ReportsDashboardSectionState
               const SizedBox(height: 24),
             ],
 
+            if (canSeeProfit)
+              ProfitLossCard(
+                profitLoss: report.profitLoss,
+                currency: selectedCurrency,
+                periodLabel: _periodType.label,
+                expenseSpend: report.expenseSpend,
+              ),
+            if (expensesEnabled) ...[
+              const SizedBox(height: 24),
+              CategorySpendCard(
+                title: 'Expenses vs budget',
+                spend: report.expenseSpend,
+              ),
+            ],
             const SizedBox(height: 24),
             DailySalesCard(
               reports: report.dailySales,
@@ -116,13 +137,7 @@ class _ReportsDashboardSectionState
     );
   }
 
-  String get _selectedPeriodLabel {
-    return switch (_periodType) {
-      ReportPeriodType.today => 'today',
-      ReportPeriodType.last7Days => 'in the last 7 days',
-      ReportPeriodType.thisMonth => 'this month',
-    };
-  }
+  String get _selectedPeriodLabel => _periodType.phrase;
 }
 
 class _ReportFilterSegmentedButton extends StatelessWidget {
@@ -137,16 +152,9 @@ class _ReportFilterSegmentedButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SegmentedButton<ReportPeriodType>(
-      segments: const [
-        ButtonSegment(value: ReportPeriodType.today, label: Text('Today')),
-        ButtonSegment(
-          value: ReportPeriodType.last7Days,
-          label: Text('Last 7 days'),
-        ),
-        ButtonSegment(
-          value: ReportPeriodType.thisMonth,
-          label: Text('This month'),
-        ),
+      segments: [
+        for (final type in ReportPeriodType.values)
+          ButtonSegment(value: type, label: Text(type.label)),
       ],
       selected: {selectedType},
       onSelectionChanged: (selected) {

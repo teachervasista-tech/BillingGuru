@@ -9,8 +9,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/widgets/copyright_banner.dart';
-import '../../../checkout/domain/payment.dart';
-import '../../../checkout/domain/sale.dart';
+import '../../../../app/widgets/period_dropdown.dart';
+import '../../../auth/presentation/auth_providers.dart';
+import '../../../checkout/domain/sale_item.dart';
+import '../widgets/return_items_dialog.dart';
 import '../../data/models/sale_summary.dart';
 import '../../domain/sales_period.dart';
 import '../view_models/sales_view_model.dart';
@@ -98,49 +100,14 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
                     },
                   ),
                   const SizedBox(height: 12),
-                  Consumer(
-                    builder: (context, ref, child) {
-                      final selected =
-                          ref.watch(salesViewModelProvider).value?.period ??
-                          SalesPeriod.all;
-                      final startMonth =
-                          ref.watch(financialYearStartMonthProvider).value ?? 4;
-                      final now = DateTime.now();
-
-                      return Align(
-                        alignment: Alignment.centerRight,
-                        child: SizedBox(
-                          width: 280,
-                          child: DropdownButtonFormField<SalesPeriod>(
-                            key: ValueKey(selected),
-                            initialValue: selected,
-                            isExpanded: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Period',
-                              prefixIcon: Icon(Icons.date_range_outlined),
-                            ),
-                            items: [
-                              for (final period in SalesPeriod.values)
-                                DropdownMenuItem(
-                                  value: period,
-                                  child: Text(
-                                    period.label(
-                                      now,
-                                      financialYearStartMonth: startMonth,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                            onChanged: (period) {
-                              if (period == null) return;
-                              ref
-                                  .read(salesViewModelProvider.notifier)
-                                  .setPeriod(period);
-                            },
-                          ),
-                        ),
-                      );
-                    },
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: PeriodDropdown(
+                      selected: salesAsync.value?.period ?? PeriodPreset.all,
+                      onChanged: (period) => ref
+                          .read(salesViewModelProvider.notifier)
+                          .setPeriod(period),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Expanded(
@@ -193,6 +160,30 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
   }
 }
 
+/// Loads the sale's items and opens the receipt print dialog.
+Future<void> reprintSaleReceipt(
+  BuildContext context,
+  WidgetRef ref,
+  SaleSummary sale,
+) async {
+  final items = await ref.read(saleItemsProvider(sale.id).future);
+  final currency = ref.read(currencyProvider);
+  final template = ref.read(receiptTemplateProvider);
+  final details = await ref.read(receiptBusinessDetailsProvider.future);
+  final logo = await ref.read(receiptLogoProvider.future);
+
+  if (!context.mounted) return;
+  await showReceiptPrintDialog(
+    context,
+    paperSize: ref.read(receiptPaperSizeProvider),
+    sale: sale.toSale(items),
+    currency: currency,
+    template: template,
+    businessDetails: details,
+    logo: logo,
+  );
+}
+
 class SaleListTile extends ConsumerWidget {
   const SaleListTile({required this.sale, super.key});
 
@@ -210,41 +201,6 @@ class SaleListTile extends ConsumerWidget {
         '${twoDigits(local.hour)}:${twoDigits(local.minute)}';
   }
 
-  Future<void> _reprintReceipt(BuildContext context, WidgetRef ref) async {
-    final itemsAsync = ref.watch(saleItemsProvider(sale.id));
-
-    itemsAsync.whenData((items) async {
-      final saleData = Sale(
-        id: sale.id,
-        invoiceNumber: sale.invoiceNumber,
-        items: items,
-        subtotalCents: sale.subtotalCents,
-        discountCents: sale.discountCents,
-        taxCents: sale.taxCents,
-        totalCents: sale.totalCents,
-        paymentMethod: PaymentMethod.values.byName(sale.paymentMethod),
-        createdAt: sale.createdAt,
-        syncStatus: sale.syncStatus,
-      );
-
-      final currency = ref.read(currencyProvider);
-      final template = ref.read(receiptTemplateProvider);
-      final details = await ref.read(receiptBusinessDetailsProvider.future);
-      final logo = await ref.read(receiptLogoProvider.future);
-
-      if (!context.mounted) return;
-      await showReceiptPrintDialog(
-        context,
-        paperSize: ref.read(receiptPaperSizeProvider),
-        sale: saleData,
-        currency: currency,
-        template: template,
-        businessDetails: details,
-        logo: logo,
-      );
-    });
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currency = ref.watch(currencyProvider);
@@ -258,8 +214,13 @@ class SaleListTile extends ConsumerWidget {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
-          '${formatDate(sale.createdAt)}\n'
-          'Payment: ${sale.paymentMethod}',
+          '${formatDate(sale.createdAt)}'
+          '${sale.customerName == null ? '' : '  ·  ${sale.customerName}'}\n'
+          'Payment: ${sale.paymentMethod}'
+          '${sale.status == SaleStatus.completed ? '' : '  ·  ${sale.status.label}'}',
+          style: sale.status == SaleStatus.voided
+              ? const TextStyle(decoration: TextDecoration.lineThrough)
+              : null,
         ),
         isThreeLine: true,
         trailing: SizedBox(
@@ -269,15 +230,19 @@ class SaleListTile extends ConsumerWidget {
             children: [
               Text(
                 CurrencyFormatter.formatCents(
-                  sale.totalCents,
+                  sale.netTotalCents,
                   currency: currency,
                 ),
-                style: Theme.of(context).textTheme.titleMedium,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: sale.status == SaleStatus.completed
+                      ? null
+                      : Theme.of(context).colorScheme.error,
+                ),
               ),
               IconButton(
                 tooltip: 'Reprint receipt',
                 icon: const Icon(Icons.print_outlined),
-                onPressed: () => _reprintReceipt(context, ref),
+                onPressed: () => reprintSaleReceipt(context, ref, sale),
               ),
               IconButton(
                 tooltip: 'View sale',
@@ -303,41 +268,6 @@ class SaleDetailsDialog extends ConsumerWidget {
   const SaleDetailsDialog({required this.sale, super.key});
 
   final SaleSummary sale;
-
-  Future<void> _reprintReceipt(BuildContext context, WidgetRef ref) async {
-    final itemsAsync = ref.watch(saleItemsProvider(sale.id));
-
-    itemsAsync.whenData((items) async {
-      final saleData = Sale(
-        id: sale.id,
-        invoiceNumber: sale.invoiceNumber,
-        items: items,
-        subtotalCents: sale.subtotalCents,
-        discountCents: sale.discountCents,
-        taxCents: sale.taxCents,
-        totalCents: sale.totalCents,
-        paymentMethod: PaymentMethod.values.byName(sale.paymentMethod),
-        createdAt: sale.createdAt,
-        syncStatus: sale.syncStatus,
-      );
-
-      final currency = ref.read(currencyProvider);
-      final template = ref.read(receiptTemplateProvider);
-      final details = await ref.read(receiptBusinessDetailsProvider.future);
-      final logo = await ref.read(receiptLogoProvider.future);
-
-      if (!context.mounted) return;
-      await showReceiptPrintDialog(
-        context,
-        paperSize: ref.read(receiptPaperSizeProvider),
-        sale: saleData,
-        currency: currency,
-        template: template,
-        businessDetails: details,
-        logo: logo,
-      );
-    });
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -386,7 +316,8 @@ class SaleDetailsDialog extends ConsumerWidget {
                                       Expanded(
                                         child: Text(
                                           '${item.quantity} x '
-                                          '${money(item.unitPriceCents)}',
+                                          '${money(item.unitPriceCents)}'
+                                          '${item.returnedQuantity > 0 ? '  (${item.returnedQuantity} returned)' : ''}',
                                           style: Theme.of(context)
                                               .textTheme
                                               .bodySmall,
@@ -411,13 +342,45 @@ class SaleDetailsDialog extends ConsumerWidget {
                 value: money(sale.totalCents),
                 isTotal: true,
               ),
+              if (sale.refundedCents > 0) ...[
+                _DetailRow(
+                  label: 'Refunded',
+                  value: '- ${money(sale.refundedCents)}',
+                ),
+                _DetailRow(
+                  label: 'Net',
+                  value: money(sale.netTotalCents),
+                  isTotal: true,
+                ),
+              ],
               const SizedBox(height: 12),
               Text('Payment: ${sale.paymentMethod}'),
+              if (sale.customerName != null)
+                Text('Customer: ${sale.customerName}'),
+              if (sale.sellerName != null) Text('Sold by: ${sale.sellerName}'),
+              if (sale.status != SaleStatus.completed)
+                Text('Status: ${sale.status.label}'),
             ],
           ),
         ),
       ),
       actions: [
+        if (sale.status.isOpen &&
+            itemsAsync.hasValue &&
+            ref.watch(canProvider(Permission.voidSales))) ...[
+          TextButton.icon(
+            key: const Key('voidSaleButton'),
+            onPressed: () => _void(context, ref),
+            icon: const Icon(Icons.block),
+            label: const Text('Void sale'),
+          ),
+          TextButton.icon(
+            key: const Key('returnItemsButton'),
+            onPressed: () => _return(context, ref, itemsAsync.value!),
+            icon: const Icon(Icons.assignment_return_outlined),
+            label: const Text('Return items'),
+          ),
+        ],
         TextButton(
           onPressed: () {
             Navigator.of(context).pop();
@@ -427,12 +390,69 @@ class SaleDetailsDialog extends ConsumerWidget {
         FilledButton.icon(
           onPressed: itemsAsync.isLoading
               ? null
-              : () => _reprintReceipt(context, ref),
+              : () => reprintSaleReceipt(context, ref, sale),
           icon: const Icon(Icons.print_outlined),
           label: const Text('Reprint'),
         ),
       ],
     );
+  }
+}
+
+extension on SaleDetailsDialog {
+  Future<void> _void(BuildContext context, WidgetRef ref) async {
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (_) => const ReasonDialog(
+        title: 'Void sale',
+        message:
+            'The full amount is refunded and all items go back into stock.',
+        confirmLabel: 'Void sale',
+      ),
+    );
+    if (reason == null || !context.mounted) return;
+    await _run(
+      context,
+      () => ref
+          .read(salesViewModelProvider.notifier)
+          .voidSale(sale.id, reason: reason),
+      'Sale ${sale.invoiceNumber} voided',
+    );
+  }
+
+  Future<void> _return(
+    BuildContext context,
+    WidgetRef ref,
+    List<SaleItem> items,
+  ) async {
+    final result = await showDialog<ReturnItemsResult>(
+      context: context,
+      builder: (_) => ReturnItemsDialog(items: items),
+    );
+    if (result == null || !context.mounted) return;
+    await _run(
+      context,
+      () => ref
+          .read(salesViewModelProvider.notifier)
+          .returnItems(sale.id, result.quantities, reason: result.reason),
+      'Return recorded for ${sale.invoiceNumber}',
+    );
+  }
+
+  Future<void> _run(
+    BuildContext context,
+    Future<void> Function() action,
+    String success,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    try {
+      await action();
+      navigator.pop();
+      messenger.showSnackBar(SnackBar(content: Text(success)));
+    } catch (error) {
+      messenger.showSnackBar(SnackBar(content: Text('$error')));
+    }
   }
 }
 

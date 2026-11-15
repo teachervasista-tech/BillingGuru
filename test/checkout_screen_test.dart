@@ -1,4 +1,3 @@
-import 'package:billing_guru/core/currency/currency_provider.dart';
 import 'package:billing_guru/features/cart/presentation/view_models/cart_view_model.dart';
 import 'package:billing_guru/features/checkout/presentation/screens/checkout_screen.dart';
 import 'package:billing_guru/features/products/data/models/product.dart';
@@ -6,13 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'helpers/test_container.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('checkout shows a receipt-style order summary', (tester) async {
-    final container = ProviderContainer();
+    final container = await createTestContainer();
     addTearDown(container.dispose);
-    await container.read(currencyProvider.notifier).loadCurrencyFromAsset();
 
     const product = Product(
       id: 'coffee',

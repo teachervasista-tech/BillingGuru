@@ -1,9 +1,9 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-const receiptBusinessDetailsAssetPath =
-    'assets/config/receipt_business_details.txt';
+import '../settings/app_settings_provider.dart';
 
+/// Receipt header lines, editable in Settings → Business
+/// (default: assets/config/receipt_business_details.txt).
 final receiptBusinessDetailsProvider = FutureProvider<String>((ref) async {
-  return (await rootBundle.loadString(receiptBusinessDetailsAssetPath)).trim();
+  return ref.watch(appSettingsProvider).businessDetails.trim();
 });

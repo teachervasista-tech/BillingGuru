@@ -1,4 +1,5 @@
 import 'package:billing_guru/core/database/app_database.dart';
+import 'package:billing_guru/features/auth/presentation/auth_providers.dart';
 import 'package:billing_guru/features/products/data/models/product.dart';
 import 'package:billing_guru/features/products/data/repositories/product_repository.dart';
 import 'package:billing_guru/features/products/data/services/product_local_service.dart';
@@ -7,6 +8,8 @@ import 'package:billing_guru/features/products/presentation/view_models/product_
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'helpers/test_container.dart';
 
 class _FakeProductRepository extends ProductRepository {
   _FakeProductRepository()
@@ -70,6 +73,7 @@ void main() {
 
     final container = ProviderContainer(
       overrides: [
+        currentUserProvider.overrideWithValue(testAdmin),
         productRepositoryProvider.overrideWith(
           (ref) => _FakeProductRepository(),
         ),

@@ -1,6 +1,6 @@
-//import 'package:sqflite/sqflite.dart';
-
 import '../../../../core/database/app_database.dart';
+import '../../../../core/database/row_reader.dart';
+import '../../../../core/period/date_range.dart';
 import '../models/dashboard_summary.dart';
 
 class DashboardLocalService {
@@ -11,20 +11,15 @@ class DashboardLocalService {
   Future<DashboardSummary> getSummary({int lowStockThreshold = 10}) async {
     final db = await database.database;
 
-    final todayStart = _todayStart().toIso8601String();
-    final tomorrowStart = _tomorrowStart().toIso8601String();
+    final today = PeriodPreset.today.rangeFor(DateTime.now())!;
 
-    final salesTotals = await db.rawQuery(
-      '''
+    final salesTotals = await db.rawQuery('''
       SELECT
         COUNT(*) AS sales_count,
         COALESCE(SUM(total_cents), 0) AS sales_total
-      FROM sales
-      WHERE created_at >= ?
-        AND created_at < ?
-      ''',
-      [todayStart, tomorrowStart],
-    );
+      FROM effective_sales
+      WHERE ${DateRange.sqlClause('created_at')}
+      ''', today.sqlArgs);
 
     final productTotals = await db.rawQuery(
       '''
@@ -55,10 +50,10 @@ class DashboardLocalService {
     final productsRow = productTotals.first;
 
     return DashboardSummary(
-      todaySalesCents: _asInt(salesRow['sales_total']),
-      todaySalesCount: _asInt(salesRow['sales_count']),
-      activeProductsCount: _asInt(productsRow['active_products']),
-      lowStockProductsCount: _asInt(productsRow['low_stock_products']),
+      todaySalesCents: salesRow.intOf('sales_total'),
+      todaySalesCount: salesRow.intOf('sales_count'),
+      activeProductsCount: productsRow.intOf('active_products'),
+      lowStockProductsCount: productsRow.intOf('low_stock_products'),
       recentSales: recentSaleRows.map(_recentSaleFromMap).toList(),
     );
   }
@@ -66,31 +61,9 @@ class DashboardLocalService {
   RecentSale _recentSaleFromMap(Map<String, Object?> map) {
     return RecentSale(
       invoiceNumber: map['invoice_number'] as String,
-      totalCents: _asInt(map['total_cents']),
+      totalCents: map.intOf('total_cents'),
       paymentMethod: map['payment_method'] as String,
-      createdAt: DateTime.parse(map['created_at'] as String),
+      createdAt: map.dateOf('created_at'),
     );
-  }
-
-  int _asInt(Object? value) {
-    if (value is int) {
-      return value;
-    }
-
-    if (value is num) {
-      return value.toInt();
-    }
-
-    return int.tryParse('$value') ?? 0;
-  }
-
-  DateTime _todayStart() {
-    final now = DateTime.now();
-
-    return DateTime(now.year, now.month, now.day);
-  }
-
-  DateTime _tomorrowStart() {
-    return _todayStart().add(const Duration(days: 1));
   }
 }

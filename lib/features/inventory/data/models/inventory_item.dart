@@ -7,6 +7,7 @@ class InventoryItem {
     required this.priceCents,
     required this.isActive,
     this.category = 'Other',
+    this.costPriceCents = 0,
   });
 
   final String category;
@@ -16,6 +17,7 @@ class InventoryItem {
   final int stockQuantity;
   final int priceCents;
   final bool isActive;
+  final int costPriceCents;
 
   bool isLowStock({int threshold = 10}) {
     return stockQuantity <= threshold;

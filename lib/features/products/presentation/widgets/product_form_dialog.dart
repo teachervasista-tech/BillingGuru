@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/product.dart';
+import '../../data/product_category_service.dart';
 import '../view_models/product_view_model.dart';
 import 'product_image_picker.dart';
 
@@ -26,6 +27,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
   late final TextEditingController _barcodeController;
   late final TextEditingController _nameController;
   late final TextEditingController _priceController;
+  late final TextEditingController _costController;
   late final TextEditingController _taxController;
   late final TextEditingController _stockController;
   late final TextEditingController _categoryController;
@@ -54,6 +56,12 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
           : (product.priceCents / 100).toStringAsFixed(2),
     );
 
+    _costController = TextEditingController(
+      text: product == null || product.costPriceCents == 0
+          ? ''
+          : (product.costPriceCents / 100).toStringAsFixed(2),
+    );
+
     _taxController = TextEditingController(
       text:
           product?.taxRate.toString() ??
@@ -75,6 +83,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     _barcodeController.dispose();
     _nameController.dispose();
     _priceController.dispose();
+    _costController.dispose();
     _taxController.dispose();
     _stockController.dispose();
     _categoryController.dispose();
@@ -89,6 +98,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
         _shortCodeController.text.trim().isEmpty &&
         _barcodeController.text.trim().isEmpty &&
         _priceController.text.trim().isEmpty &&
+        _costController.text.trim().isEmpty &&
         _stockController.text.trim().isEmpty &&
         _taxController.text.trim() ==
             ref.read(defaultTaxRateProvider).toString() &&
@@ -106,6 +116,8 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     }
 
     final priceCents = _parsePriceToCents(_priceController.text);
+    final costText = _costController.text.trim();
+    final costPriceCents = costText.isEmpty ? 0 : _parsePriceToCents(costText);
 
     final taxRate = int.parse(_taxController.text.trim());
 
@@ -129,6 +141,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
         taxRate: taxRate,
         stockQuantity: stockQuantity,
         imagePath: _imagePath,
+        costPriceCents: costPriceCents,
       );
     } else {
       final oldImagePath = widget.product?.imagePath;
@@ -142,6 +155,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
         taxRate: taxRate,
         stockQuantity: stockQuantity,
         imagePath: _imagePath,
+        costPriceCents: costPriceCents,
       );
       if (success && oldImagePath != null && oldImagePath != _imagePath) {
         await ProductImageStorage.deleteImage(oldImagePath);
@@ -171,6 +185,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
       _barcodeController.clear();
       _nameController.clear();
       _priceController.clear();
+      _costController.clear();
       _taxController.text = ref.read(defaultTaxRateProvider).toString();
       _stockController.clear();
       _categoryController.clear();
@@ -212,6 +227,11 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     }
 
     return null;
+  }
+
+  String? _optionalPriceValidator(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    return _priceValidator(value);
   }
 
   String? _priceValidator(String? value) {
@@ -294,9 +314,12 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
   @override
   Widget build(BuildContext context) {
     final title = widget.isEditing ? 'Edit product' : 'Add product';
-    final categories =
-        ref.watch(productViewModelProvider).asData?.value.categories ??
-        const <String>[];
+    final categories = <String>[
+      for (final category
+          in ref.watch(productCategoriesProvider).value ??
+              const <ProductCategory>[])
+        if (category.isActive) category.name,
+    ];
 
     return AlertDialog(
       title: Text(title),
@@ -325,10 +348,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _ordered(
-                    2,
-                    _buildCategoryField(categories),
-                  ),
+                  _ordered(2, _buildCategoryField(categories)),
                   const SizedBox(height: 12),
                   _ordered(
                     3,
@@ -415,6 +435,25 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
                         decimal: true,
                       ),
                       validator: _priceValidator,
+                      textInputAction: TextInputAction.next,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _ordered(
+                    6.5,
+                    TextFormField(
+                      key: const Key('costPriceField'),
+                      controller: _costController,
+                      scrollPhysics: const NeverScrollableScrollPhysics(),
+                      decoration: const InputDecoration(
+                        labelText: 'Cost price (optional)',
+                        hintText: 'Purchase cost per unit, for profit reports',
+                        prefixIcon: Icon(Icons.shopping_bag_outlined),
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      validator: _optionalPriceValidator,
                       textInputAction: TextInputAction.next,
                     ),
                   ),

@@ -13,6 +13,9 @@ class Sale {
     required this.paymentMethod,
     required this.createdAt,
     required this.syncStatus,
+    this.customerId,
+    this.customerName,
+    this.userId,
   });
 
   final String id;
@@ -25,4 +28,11 @@ class Sale {
   final PaymentMethod paymentMethod;
   final DateTime createdAt;
   final String syncStatus;
+  final String? customerId;
+
+  /// Printed on the receipt when set.
+  final String? customerName;
+
+  /// Signed-in user who made the sale.
+  final String? userId;
 }
