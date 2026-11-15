@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -109,6 +111,26 @@ class AppDatabase {
     }
 
     _database = null;
+  }
+
+  /// Replaces the database file with [source] (e.g. from a backup). The next
+  /// access reopens it and runs any pending migrations.
+  Future<void> replaceWith(File source) async {
+    final path = await databasePath;
+    await close();
+    for (final suffix in ['', '-wal', '-shm', '-journal']) {
+      final file = File('$path$suffix');
+      if (await file.exists()) await file.delete();
+    }
+    await source.copy(path);
+    await database;
+  }
+
+  /// Writes a consistent copy of the open database to [targetPath].
+  Future<void> snapshotTo(String targetPath) async {
+    final db = await database;
+    final escaped = targetPath.replaceAll("'", "''");
+    await db.execute("VACUUM INTO '$escaped'");
   }
 
   Future<void> deleteDatabaseForDevelopment() async {

@@ -61,6 +61,7 @@ class CheckoutRepository {
         'payment_method': sale.paymentMethod.name,
         'created_at': sale.createdAt.toIso8601String(),
         'sync_status': sale.syncStatus,
+        'customer_id': sale.customerId,
       }, conflictAlgorithm: ConflictAlgorithm.abort);
 
       for (final item in sale.items) {

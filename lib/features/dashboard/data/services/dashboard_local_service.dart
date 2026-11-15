@@ -17,7 +17,7 @@ class DashboardLocalService {
       SELECT
         COUNT(*) AS sales_count,
         COALESCE(SUM(total_cents), 0) AS sales_total
-      FROM sales
+      FROM effective_sales
       WHERE ${DateRange.sqlClause('created_at')}
       ''', today.sqlArgs);
 

@@ -12,6 +12,7 @@ final Map<int, Migration> appMigrations = {
   2: _v2CategoryAndOptionalBarcode,
   3: _v3StockMovementsAndSettings,
   4: _v4Expenses,
+  5: _v5CustomersAndReturns,
 };
 
 /// Built-in expense categories (id, name, ARGB color). `cat-stock` is used
@@ -248,4 +249,112 @@ Future<void> _v4Expenses(DatabaseExecutor db) async {
       'sort_order': index,
     }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }
+}
+
+// v4 -> v5: customers, voids/returns, and reporting views that net them out.
+Future<void> _v5CustomersAndReturns(DatabaseExecutor db) async {
+  await db.execute('''
+    CREATE TABLE IF NOT EXISTS customers (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      phone TEXT,
+      email TEXT,
+      address TEXT,
+      tax_id TEXT,
+      notes TEXT,
+      created_at TEXT NOT NULL
+    )
+  ''');
+  await db.execute(
+    'CREATE INDEX IF NOT EXISTS idx_customers_name ON customers (name)',
+  );
+
+  await addColumnIfMissing(db, 'sales', 'customer_id', 'TEXT');
+  await addColumnIfMissing(
+    db,
+    'sales',
+    'status',
+    "TEXT NOT NULL DEFAULT 'completed'",
+  );
+  await addColumnIfMissing(
+    db,
+    'sales',
+    'refunded_cents',
+    'INTEGER NOT NULL DEFAULT 0',
+  );
+  await addColumnIfMissing(
+    db,
+    'sales',
+    'refunded_tax_cents',
+    'INTEGER NOT NULL DEFAULT 0',
+  );
+  await addColumnIfMissing(
+    db,
+    'sale_items',
+    'returned_quantity',
+    'INTEGER NOT NULL DEFAULT 0',
+  );
+  await db.execute(
+    'CREATE INDEX IF NOT EXISTS idx_sales_customer ON sales (customer_id)',
+  );
+
+  await db.execute('''
+    CREATE TABLE IF NOT EXISTS sale_returns (
+      id TEXT PRIMARY KEY,
+      sale_id TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      reason TEXT,
+      refund_cents INTEGER NOT NULL,
+      refund_tax_cents INTEGER NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (sale_id) REFERENCES sales (id) ON DELETE CASCADE
+    )
+  ''');
+  await db.execute('''
+    CREATE TABLE IF NOT EXISTS sale_return_items (
+      id TEXT PRIMARY KEY,
+      return_id TEXT NOT NULL,
+      sale_item_id TEXT NOT NULL,
+      product_id TEXT NOT NULL,
+      quantity INTEGER NOT NULL,
+      refund_cents INTEGER NOT NULL,
+      FOREIGN KEY (return_id) REFERENCES sale_returns (id) ON DELETE CASCADE,
+      FOREIGN KEY (sale_item_id) REFERENCES sale_items (id) ON DELETE CASCADE
+    )
+  ''');
+
+  // Reports read these views so voided sales and returned items are
+  // excluded everywhere without repeating the logic in every query.
+  await db.execute('DROP VIEW IF EXISTS effective_sales');
+  await db.execute('''
+    CREATE VIEW effective_sales AS
+    SELECT
+      id,
+      invoice_number,
+      customer_id,
+      payment_method,
+      created_at,
+      subtotal_cents,
+      discount_cents,
+      tax_cents - refunded_tax_cents AS tax_cents,
+      total_cents - refunded_cents AS total_cents
+    FROM sales
+    WHERE status != 'voided'
+  ''');
+  await db.execute('DROP VIEW IF EXISTS effective_sale_items');
+  await db.execute('''
+    CREATE VIEW effective_sale_items AS
+    SELECT
+      si.id,
+      si.sale_id,
+      si.product_id,
+      si.unit_price_cents,
+      si.unit_cost_cents,
+      si.quantity - si.returned_quantity AS quantity,
+      si.total_cents - si.unit_price_cents * si.returned_quantity
+        AS total_cents
+    FROM sale_items si
+    INNER JOIN sales s ON s.id = si.sale_id
+    WHERE s.status != 'voided'
+  ''');
 }

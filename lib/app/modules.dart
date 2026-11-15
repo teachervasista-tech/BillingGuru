@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../core/config/app_features.dart';
 import '../features/cart/presentation/screens/pos_screen.dart';
 import '../features/checkout/presentation/screens/checkout_screen.dart';
+import '../features/customers/presentation/screens/customers_screen.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/expenses/presentation/screens/expenses_screen.dart';
 import '../features/home/presentation/screens/home_screen.dart';
@@ -12,7 +13,6 @@ import '../features/products/presentation/screens/products_screen.dart';
 import '../features/reports/presentation/screens/reports_screen.dart';
 import '../features/sales/presentation/screens/sales_history_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
-import 'screens/placeholder_screen.dart';
 
 /// A top-level area of the app. Adding a module = adding one entry to
 /// [appModules]; the router, route guard and navigation rail all read it.
@@ -112,8 +112,7 @@ final List<AppModule> appModules = [
     featureKey: AppFeatures.customers,
     icon: const Icon(Icons.people_outline),
     selectedIcon: const Icon(Icons.people),
-    builder: (_, _) =>
-        const PlaceholderScreen(title: 'Customers', icon: Icons.people),
+    builder: (_, _) => const CustomersScreen(),
   ),
   AppModule(
     id: 'sales',

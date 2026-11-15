@@ -23,17 +23,17 @@ class ReportLocalService {
         COALESCE(
           (
             SELECT SUM(quantity)
-            FROM sale_items
+            FROM effective_sale_items
             WHERE sale_id IN (
               SELECT id
-              FROM sales
+              FROM effective_sales
               WHERE created_at >= ?
                 AND created_at < ?
             )
           ),
           0
         ) AS total_items
-      FROM sales
+      FROM effective_sales
       WHERE created_at >= ?
         AND created_at < ?
       ''',
@@ -74,7 +74,7 @@ class ReportLocalService {
       SELECT
         COALESCE(SUM(total_cents), 0) AS sales_cents,
         COALESCE(SUM(tax_cents), 0) AS tax_cents
-      FROM sales
+      FROM effective_sales
       WHERE ${DateRange.sqlClause('created_at')}
       ''', range.sqlArgs)).first;
 
@@ -85,8 +85,8 @@ class ReportLocalService {
           SUM(CASE WHEN si.unit_cost_cents = 0 THEN si.quantity ELSE 0 END),
           0
         ) AS units_without_cost
-      FROM sale_items si
-      INNER JOIN sales s ON s.id = si.sale_id
+      FROM effective_sale_items si
+      INNER JOIN effective_sales s ON s.id = si.sale_id
       WHERE ${DateRange.sqlClause('s.created_at')}
       ''', range.sqlArgs)).first;
 
@@ -125,7 +125,7 @@ class ReportLocalService {
         substr(created_at, 1, 10) AS sale_date,
         COALESCE(SUM(total_cents), 0) AS total_cents,
         COUNT(*) AS transaction_count
-      FROM sales
+      FROM effective_sales
       WHERE created_at >= ?
         AND created_at < ?
       GROUP BY substr(created_at, 1, 10)
@@ -157,7 +157,7 @@ class ReportLocalService {
         payment_method,
         COALESCE(SUM(total_cents), 0) AS total_cents,
         COUNT(*) AS transaction_count
-      FROM sales
+      FROM effective_sales
       WHERE created_at >= ?
         AND created_at < ?
       GROUP BY payment_method
@@ -189,8 +189,8 @@ class ReportLocalService {
         p.name AS product_name,
         COALESCE(SUM(si.quantity), 0) AS quantity,
         COALESCE(SUM(si.total_cents), 0) AS total_cents
-      FROM sale_items si
-      INNER JOIN sales s
+      FROM effective_sale_items si
+      INNER JOIN effective_sales s
         ON s.id = si.sale_id
       INNER JOIN products p
         ON p.id = si.product_id
@@ -232,8 +232,8 @@ class ReportLocalService {
         SELECT
           si.product_id,
           SUM(si.quantity) AS sold_quantity
-        FROM sale_items si
-        INNER JOIN sales s
+        FROM effective_sale_items si
+        INNER JOIN effective_sales s
           ON s.id = si.sale_id
         WHERE s.created_at >= ?
           AND s.created_at < ?

@@ -6,6 +6,11 @@ import '../../domain/sales_period.dart';
 import '../../data/models/sale_summary.dart';
 import '../../data/repositories/sales_repository.dart';
 import '../../data/services/sales_local_service.dart';
+import '../../../customers/presentation/customer_providers.dart';
+import '../../../dashboard/presentation/view_models/dashboard_view_model.dart';
+import '../../../inventory/presentation/view_models/inventory_view_model.dart';
+import '../../../products/presentation/view_models/product_view_model.dart';
+import '../../../reports/presentation/providers/report_providers.dart';
 
 final salesRepositoryProvider = Provider<SalesRepository>((ref) {
   return SalesRepository(
@@ -77,5 +82,32 @@ class SalesViewModel extends AsyncNotifier<SalesState> {
 
   Future<void> clearSearch() {
     return search('');
+  }
+
+  Future<void> voidSale(String saleId, {String? reason}) async {
+    await ref.read(salesRepositoryProvider).voidSale(saleId, reason: reason);
+    await _afterReturn(saleId);
+  }
+
+  Future<void> returnItems(
+    String saleId,
+    Map<String, int> quantities, {
+    String? reason,
+  }) async {
+    await ref
+        .read(salesRepositoryProvider)
+        .returnItems(saleId, quantities, reason: reason);
+    await _afterReturn(saleId);
+  }
+
+  Future<void> _afterReturn(String saleId) async {
+    ref.invalidate(saleItemsProvider(saleId));
+    ref.invalidate(reportProvider);
+    ref.invalidate(dashboardViewModelProvider);
+    ref.invalidate(inventoryViewModelProvider);
+    ref.invalidate(productViewModelProvider);
+    ref.invalidate(customerStatsProvider);
+    ref.invalidate(customerSalesProvider);
+    await loadSales();
   }
 }

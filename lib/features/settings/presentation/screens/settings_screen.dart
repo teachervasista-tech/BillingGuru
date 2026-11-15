@@ -18,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../expenses/presentation/widgets/expense_categories_tab.dart';
 import '../widgets/business_settings_tab.dart';
+import '../widgets/data_settings_tab.dart';
 import '../widgets/modules_settings_tab.dart';
 
 /// A Settings tab: label, icon and content.
@@ -60,6 +61,7 @@ class SettingsScreen extends ConsumerWidget {
           ExpenseCategoriesTab(),
         ),
       const SettingsTab('Modules', Icons.apps_outlined, ModulesSettingsTab()),
+      const SettingsTab('Data', Icons.storage_outlined, DataSettingsTab()),
     ];
 
     return DefaultTabController(

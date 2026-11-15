@@ -187,6 +187,10 @@ class ReceiptFormatter {
       ),
     );
     receipt.writeln(wrap('Invoice: ${sale.invoiceNumber}', width).join('\n'));
+    final customer = sale.customerName?.trim();
+    if (customer != null && customer.isNotEmpty) {
+      receipt.writeln(wrap('Customer: $customer', width).join('\n'));
+    }
     receipt.writeln(rule);
     receipt.writeln(tableRow('Item', 'Qty', 'Price', 'Total'));
     receipt.writeln(rule);

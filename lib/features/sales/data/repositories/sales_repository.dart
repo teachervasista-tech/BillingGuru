@@ -11,9 +11,23 @@ class SalesRepository {
   Future<List<SaleSummary>> getSales({
     String search = '',
     SalesDateRange? range,
+    String? customerId,
   }) {
-    return localService.getSales(search: search, range: range);
+    return localService.getSales(
+      search: search,
+      range: range,
+      customerId: customerId,
+    );
   }
+
+  Future<void> voidSale(String saleId, {String? reason}) =>
+      localService.voidSale(saleId, reason: reason);
+
+  Future<void> returnItems(
+    String saleId,
+    Map<String, int> quantities, {
+    String? reason,
+  }) => localService.returnItems(saleId, quantities, reason: reason);
 
   Future<SaleSummary?> getSaleById(String saleId) {
     return localService.getSaleById(saleId);

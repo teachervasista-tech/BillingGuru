@@ -14,6 +14,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../customers/presentation/customer_providers.dart';
+import '../../../customers/presentation/widgets/customer_dialogs.dart';
 import '../view_models/cart_view_model.dart';
 
 class CartSummary extends ConsumerWidget {
@@ -84,6 +86,8 @@ class CartSummary extends ConsumerWidget {
                 ),
               ],
             ),
+            if (ref.watch(appFeaturesProvider).customersEnabled)
+              const _CustomerRow(),
             const SizedBox(height: 12),
             _SummaryRow(
               label: 'Subtotal',
@@ -120,6 +124,49 @@ class CartSummary extends ConsumerWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CustomerRow extends ConsumerWidget {
+  const _CustomerRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final customer = ref.watch(selectedCustomerProvider);
+    final notifier = ref.read(selectedCustomerProvider.notifier);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          const Icon(Icons.person_outline, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              customer?.name ?? 'Walk-in customer',
+              key: const Key('cartCustomerName'),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (customer != null)
+            IconButton(
+              tooltip: 'Remove customer',
+              icon: const Icon(Icons.close, size: 18),
+              onPressed: () => notifier.select(null),
+            ),
+          TextButton(
+            onPressed: () async {
+              final picked = await showDialog(
+                context: context,
+                builder: (_) => const CustomerPickerDialog(),
+              );
+              if (picked != null) notifier.select(picked);
+            },
+            child: Text(customer == null ? 'Select' : 'Change'),
+          ),
+        ],
       ),
     );
   }

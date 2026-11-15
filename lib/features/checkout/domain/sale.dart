@@ -13,6 +13,8 @@ class Sale {
     required this.paymentMethod,
     required this.createdAt,
     required this.syncStatus,
+    this.customerId,
+    this.customerName,
   });
 
   final String id;
@@ -25,4 +27,8 @@ class Sale {
   final PaymentMethod paymentMethod;
   final DateTime createdAt;
   final String syncStatus;
+  final String? customerId;
+
+  /// Printed on the receipt when set.
+  final String? customerName;
 }
