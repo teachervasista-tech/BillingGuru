@@ -11,7 +11,22 @@ typedef Migration = Future<void> Function(DatabaseExecutor db);
 final Map<int, Migration> appMigrations = {
   2: _v2CategoryAndOptionalBarcode,
   3: _v3StockMovementsAndSettings,
+  4: _v4Expenses,
 };
+
+/// Built-in expense categories (id, name, ARGB color). `cat-stock` is used
+/// when receiving stock with a cost.
+const defaultExpenseCategories = [
+  ('cat-rent', 'Rent', 0xFF5C6BC0),
+  ('cat-utilities', 'Utilities', 0xFF26A69A),
+  ('cat-salaries', 'Salaries', 0xFFEF6C00),
+  ('cat-stock', 'Stock purchase', 0xFF8D6E63),
+  ('cat-transport', 'Transport', 0xFF29B6F6),
+  ('cat-maintenance', 'Maintenance', 0xFF78909C),
+  ('cat-marketing', 'Marketing', 0xFFEC407A),
+  ('cat-other', 'Other', 0xFF9E9E9E),
+];
+const stockPurchaseCategoryId = 'cat-stock';
 
 int get latestSchemaVersion =>
     appMigrations.keys.fold(baselineSchemaVersion, (a, b) => a > b ? a : b);
@@ -157,4 +172,80 @@ Future<void> _v3StockMovementsAndSettings(DatabaseExecutor db) async {
   await db.execute('''
     CREATE INDEX IF NOT EXISTS idx_sales_created_at ON sales (created_at)
   ''');
+}
+
+// v3 -> v4: expenditure management and cost tracking.
+Future<void> _v4Expenses(DatabaseExecutor db) async {
+  await addColumnIfMissing(
+    db,
+    'products',
+    'cost_price_cents',
+    'INTEGER NOT NULL DEFAULT 0',
+  );
+  await addColumnIfMissing(
+    db,
+    'sale_items',
+    'unit_cost_cents',
+    'INTEGER NOT NULL DEFAULT 0',
+  );
+  await addColumnIfMissing(db, 'stock_movements', 'unit_cost_cents', 'INTEGER');
+  await addColumnIfMissing(db, 'stock_movements', 'supplier', 'TEXT');
+  await addColumnIfMissing(db, 'stock_movements', 'expense_id', 'TEXT');
+
+  await db.execute('''
+    CREATE TABLE IF NOT EXISTS expense_categories (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+      color INTEGER NOT NULL,
+      monthly_budget_cents INTEGER NOT NULL DEFAULT 0,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      sort_order INTEGER NOT NULL DEFAULT 0
+    )
+  ''');
+  await db.execute('''
+    CREATE TABLE IF NOT EXISTS recurring_expenses (
+      id TEXT PRIMARY KEY,
+      category_id TEXT NOT NULL,
+      amount_cents INTEGER NOT NULL,
+      payment_method TEXT NOT NULL,
+      vendor TEXT,
+      note TEXT,
+      frequency TEXT NOT NULL,
+      next_due_date TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (category_id) REFERENCES expense_categories (id)
+    )
+  ''');
+  await db.execute('''
+    CREATE TABLE IF NOT EXISTS expenses (
+      id TEXT PRIMARY KEY,
+      category_id TEXT NOT NULL,
+      amount_cents INTEGER NOT NULL,
+      tax_cents INTEGER NOT NULL DEFAULT 0,
+      payment_method TEXT NOT NULL,
+      vendor TEXT,
+      reference_no TEXT,
+      note TEXT,
+      attachment_path TEXT,
+      expense_date TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      recurring_id TEXT,
+      FOREIGN KEY (category_id) REFERENCES expense_categories (id),
+      FOREIGN KEY (recurring_id) REFERENCES recurring_expenses (id)
+        ON DELETE SET NULL
+    )
+  ''');
+  await db.execute(
+    'CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses (expense_date)',
+  );
+
+  for (final (index, (id, name, color)) in defaultExpenseCategories.indexed) {
+    await db.insert('expense_categories', {
+      'id': id,
+      'name': name,
+      'color': color,
+      'sort_order': index,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+  }
 }

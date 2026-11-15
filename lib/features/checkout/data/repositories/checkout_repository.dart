@@ -71,6 +71,7 @@ class CheckoutRepository {
           'quantity': item.quantity,
           'unit_price_cents': item.unitPriceCents,
           'total_cents': item.totalCents,
+          'unit_cost_cents': item.unitCostCents,
         }, conflictAlgorithm: ConflictAlgorithm.abort);
 
         await transaction.rawUpdate(

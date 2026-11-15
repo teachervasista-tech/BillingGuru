@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/widgets/copyright_banner.dart';
+import '../../../../app/widgets/period_dropdown.dart';
 import '../../../checkout/domain/payment.dart';
 import '../../../checkout/domain/sale.dart';
 import '../../data/models/sale_summary.dart';
@@ -98,49 +99,14 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
                     },
                   ),
                   const SizedBox(height: 12),
-                  Consumer(
-                    builder: (context, ref, child) {
-                      final selected =
-                          ref.watch(salesViewModelProvider).value?.period ??
-                          SalesPeriod.all;
-                      final startMonth =
-                          ref.watch(financialYearStartMonthProvider).value ?? 4;
-                      final now = DateTime.now();
-
-                      return Align(
-                        alignment: Alignment.centerRight,
-                        child: SizedBox(
-                          width: 280,
-                          child: DropdownButtonFormField<SalesPeriod>(
-                            key: ValueKey(selected),
-                            initialValue: selected,
-                            isExpanded: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Period',
-                              prefixIcon: Icon(Icons.date_range_outlined),
-                            ),
-                            items: [
-                              for (final period in SalesPeriod.values)
-                                DropdownMenuItem(
-                                  value: period,
-                                  child: Text(
-                                    period.label(
-                                      now,
-                                      financialYearStartMonth: startMonth,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                            onChanged: (period) {
-                              if (period == null) return;
-                              ref
-                                  .read(salesViewModelProvider.notifier)
-                                  .setPeriod(period);
-                            },
-                          ),
-                        ),
-                      );
-                    },
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: PeriodDropdown(
+                      selected: salesAsync.value?.period ?? PeriodPreset.all,
+                      onChanged: (period) => ref
+                          .read(salesViewModelProvider.notifier)
+                          .setPeriod(period),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Expanded(

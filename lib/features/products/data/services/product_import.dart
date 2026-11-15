@@ -15,9 +15,9 @@ class ParsedProductRows {
 }
 
 /// Columns (header row, case-insensitive): Name, Price are required;
-/// Category, Short code, Barcode, Tax rate, Stock are optional.
+/// Category, Short code, Barcode, Tax rate, Stock, Cost price are optional.
 const productImportColumns =
-    'Name, Category, Short code, Barcode, Price, Tax rate, Stock';
+    'Name, Category, Short code, Barcode, Price, Tax rate, Stock, Cost price';
 
 ParsedProductRows parseProductRows(
   List<List<String>> rows, {
@@ -48,6 +48,7 @@ ParsedProductRows parseProductRows(
   final priceCol = column(['price', 'unitprice']);
   final taxCol = column(['taxrate', 'tax']);
   final stockCol = column(['stock', 'quantity', 'stockquantity']);
+  final costCol = column(['costprice', 'cost', 'purchaseprice', 'buyprice']);
 
   if (nameCol < 0 || priceCol < 0) {
     return const ParsedProductRows(
@@ -93,6 +94,14 @@ ParsedProductRows parseProductRows(
       errors.add('Row $line: invalid tax rate or stock.');
       continue;
     }
+    final costText = cell(row, costCol);
+    final cost = costText.isEmpty
+        ? 0.0
+        : double.tryParse(costText.replaceAll(',', '.'));
+    if (cost == null || cost < 0) {
+      errors.add('Row $line: invalid cost price "$costText".');
+      continue;
+    }
 
     var shortCode = cell(row, shortCol).toUpperCase();
     if (shortCode.isEmpty) {
@@ -119,6 +128,7 @@ ParsedProductRows parseProductRows(
         priceCents: (price * 100).round(),
         taxRate: tax,
         stockQuantity: stock,
+        costPriceCents: (cost * 100).round(),
       ),
     );
   }

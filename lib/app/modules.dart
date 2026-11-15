@@ -5,6 +5,7 @@ import '../core/config/app_features.dart';
 import '../features/cart/presentation/screens/pos_screen.dart';
 import '../features/checkout/presentation/screens/checkout_screen.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../features/expenses/presentation/screens/expenses_screen.dart';
 import '../features/home/presentation/screens/home_screen.dart';
 import '../features/inventory/presentation/screens/inventory_screen.dart';
 import '../features/products/presentation/screens/products_screen.dart';
@@ -122,6 +123,15 @@ final List<AppModule> appModules = [
     icon: const Icon(Icons.receipt_long_outlined),
     selectedIcon: const Icon(Icons.receipt_long),
     builder: (_, _) => const SalesHistoryScreen(),
+  ),
+  AppModule(
+    id: 'expenses',
+    label: 'Expenses',
+    route: '/expenses',
+    featureKey: AppFeatures.expenses,
+    icon: const Icon(Icons.account_balance_wallet_outlined),
+    selectedIcon: const Icon(Icons.account_balance_wallet),
+    builder: (_, _) => const ExpensesScreen(),
   ),
   AppModule(
     id: 'reports',

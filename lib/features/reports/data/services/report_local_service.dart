@@ -1,5 +1,7 @@
 import '../../../../core/database/app_database.dart';
+import '../../../../core/database/migrations.dart';
 import '../../../../core/database/row_reader.dart';
+import '../../../../core/period/date_range.dart';
 import '../models/report_models.dart';
 
 class ReportLocalService {
@@ -58,6 +60,56 @@ class ReportLocalService {
       averageTransactionCents: totalTransactions == 0
           ? 0
           : totalSalesCents ~/ totalTransactions,
+    );
+  }
+
+  Future<ProfitLoss> getProfitLoss({
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final db = await database.database;
+    final range = DateRange(from, to);
+
+    final sales = (await db.rawQuery('''
+      SELECT
+        COALESCE(SUM(total_cents), 0) AS sales_cents,
+        COALESCE(SUM(tax_cents), 0) AS tax_cents
+      FROM sales
+      WHERE ${DateRange.sqlClause('created_at')}
+      ''', range.sqlArgs)).first;
+
+    final cogs = (await db.rawQuery('''
+      SELECT
+        COALESCE(SUM(si.quantity * si.unit_cost_cents), 0) AS cogs_cents,
+        COALESCE(
+          SUM(CASE WHEN si.unit_cost_cents = 0 THEN si.quantity ELSE 0 END),
+          0
+        ) AS units_without_cost
+      FROM sale_items si
+      INNER JOIN sales s ON s.id = si.sale_id
+      WHERE ${DateRange.sqlClause('s.created_at')}
+      ''', range.sqlArgs)).first;
+
+    final expenses = (await db.rawQuery(
+      '''
+      SELECT
+        COALESCE(SUM(CASE WHEN category_id = ? THEN 0 ELSE amount_cents END), 0)
+          AS operating_cents,
+        COALESCE(SUM(CASE WHEN category_id = ? THEN amount_cents ELSE 0 END), 0)
+          AS stock_cents
+      FROM expenses
+      WHERE ${DateRange.sqlClause('expense_date')}
+      ''',
+      [stockPurchaseCategoryId, stockPurchaseCategoryId, ...range.sqlArgs],
+    )).first;
+
+    return ProfitLoss(
+      salesCents: sales.intOf('sales_cents'),
+      taxCollectedCents: sales.intOf('tax_cents'),
+      cogsCents: cogs.intOf('cogs_cents'),
+      unitsWithoutCost: cogs.intOf('units_without_cost'),
+      operatingExpensesCents: expenses.intOf('operating_cents'),
+      stockPurchasesCents: expenses.intOf('stock_cents'),
     );
   }
 

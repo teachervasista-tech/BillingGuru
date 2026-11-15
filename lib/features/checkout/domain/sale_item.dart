@@ -7,6 +7,7 @@ class SaleItem {
     required this.unitPriceCents,
     required this.totalCents,
     this.productName,
+    this.unitCostCents = 0,
   });
 
   final String id;
@@ -16,4 +17,9 @@ class SaleItem {
   final int unitPriceCents;
   final int totalCents;
   final String? productName;
+
+  /// Product cost at the time of sale (snapshot for COGS).
+  final int unitCostCents;
+
+  int get totalCostCents => unitCostCents * quantity;
 }

@@ -10,6 +10,7 @@ class Product {
     required this.stockQuantity,
     this.imagePath,
     this.isActive = true,
+    this.costPriceCents = 0,
   });
 
   final String id;
@@ -23,6 +24,11 @@ class Product {
   final String? imagePath;
   final bool isActive;
 
+  /// Purchase cost per unit (0 = unknown). Used for COGS and margins.
+  final int costPriceCents;
+
+  int get marginCents => priceCents - costPriceCents;
+
   Product copyWith({
     String? id,
     String? shortCode,
@@ -34,6 +40,7 @@ class Product {
     int? stockQuantity,
     String? imagePath,
     bool? isActive,
+    int? costPriceCents,
   }) {
     return Product(
       id: id ?? this.id,
@@ -46,6 +53,7 @@ class Product {
       stockQuantity: stockQuantity ?? this.stockQuantity,
       imagePath: imagePath ?? this.imagePath,
       isActive: isActive ?? this.isActive,
+      costPriceCents: costPriceCents ?? this.costPriceCents,
     );
   }
 }

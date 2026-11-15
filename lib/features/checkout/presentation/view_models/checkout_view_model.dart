@@ -158,6 +158,7 @@ class CheckoutViewModel extends Notifier<CheckoutState> {
         productName: cartItem.product.name,
         quantity: cartItem.quantity,
         unitPriceCents: cartItem.product.priceCents,
+        unitCostCents: cartItem.product.costPriceCents,
         totalCents: cartItem.totalCents,
       );
     }).toList();

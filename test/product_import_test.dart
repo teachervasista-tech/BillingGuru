@@ -57,4 +57,16 @@ void main() {
       throwsFormatException,
     );
   });
+
+  test('optional cost price column is parsed and validated', () {
+    final parsed = parseProductRows([
+      ['Name', 'Price', 'Cost price'],
+      ['Tea', '2.50', '1,20'],
+      ['Milk', '1.00', ''],
+      ['Bad', '1.00', '-3'],
+    ], defaultTaxRate: 5);
+
+    expect(parsed.products.map((p) => p.costPriceCents), [120, 0]);
+    expect(parsed.errors.single, contains('invalid cost price'));
+  });
 }

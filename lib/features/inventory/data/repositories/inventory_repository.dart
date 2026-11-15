@@ -1,3 +1,4 @@
+import '../../../checkout/domain/payment.dart';
 import '../models/inventory_item.dart';
 import '../services/inventory_local_service.dart';
 
@@ -19,8 +20,19 @@ class InventoryRepository {
   Future<void> increaseStock({
     required String productId,
     required int quantity,
+    int? unitCostCents,
+    String? supplier,
+    bool recordExpense = false,
+    PaymentMethod paymentMethod = PaymentMethod.cash,
   }) {
-    return localService.increaseStock(productId: productId, quantity: quantity);
+    return localService.increaseStock(
+      productId: productId,
+      quantity: quantity,
+      unitCostCents: unitCostCents,
+      supplier: supplier,
+      recordExpense: recordExpense,
+      paymentMethod: paymentMethod,
+    );
   }
 
   Future<void> decreaseStock({

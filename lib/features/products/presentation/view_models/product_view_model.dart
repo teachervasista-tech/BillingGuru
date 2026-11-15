@@ -204,6 +204,7 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
     required int taxRate,
     required int stockQuantity,
     String? imagePath,
+    int costPriceCents = 0,
   }) async {
     final repository = ref.read(productRepositoryProvider);
 
@@ -217,6 +218,7 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
       taxRate: taxRate,
       stockQuantity: stockQuantity,
       imagePath: imagePath,
+      costPriceCents: costPriceCents,
     );
 
     try {
@@ -239,6 +241,7 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
     required int taxRate,
     required int stockQuantity,
     String? imagePath,
+    int? costPriceCents,
   }) async {
     final repository = ref.read(productRepositoryProvider);
 
@@ -251,6 +254,7 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
       taxRate: taxRate,
       stockQuantity: stockQuantity,
       imagePath: imagePath,
+      costPriceCents: costPriceCents,
     );
 
     try {

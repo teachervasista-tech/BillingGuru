@@ -13,6 +13,7 @@ class ProductMapper {
       stockQuantity: map['stock_quantity'] as int,
       imagePath: map['image_path'] as String?,
       isActive: (map['is_active'] as int? ?? 1) == 1,
+      costPriceCents: map['cost_price_cents'] as int? ?? 0,
     );
   }
 
@@ -28,6 +29,7 @@ class ProductMapper {
       'tax_rate': product.taxRate,
       'stock_quantity': product.stockQuantity,
       'is_active': product.isActive ? 1 : 0,
+      'cost_price_cents': product.costPriceCents,
     };
   }
 }

@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../expenses/presentation/widgets/expense_categories_tab.dart';
 import '../widgets/business_settings_tab.dart';
 import '../widgets/modules_settings_tab.dart';
 
@@ -51,6 +52,12 @@ class SettingsScreen extends ConsumerWidget {
           'Payment options',
           Icons.payments_outlined,
           _PaymentOptionsTab(),
+        ),
+      if (features.expensesEnabled)
+        const SettingsTab(
+          'Expense categories',
+          Icons.category_outlined,
+          ExpenseCategoriesTab(),
         ),
       const SettingsTab('Modules', Icons.apps_outlined, ModulesSettingsTab()),
     ];
