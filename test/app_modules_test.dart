@@ -4,20 +4,28 @@ import 'package:billing_guru/core/period/date_range.dart';
 import 'package:billing_guru/core/settings/app_settings.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'helpers/test_container.dart';
+
 void main() {
   group('moduleRouteRedirect', () {
     test('allows enabled modules', () {
-      expect(moduleRouteRedirect('/sales', const AppFeatures()), isNull);
+      expect(
+        moduleRouteRedirect('/sales', const AppFeatures(), testAdmin),
+        isNull,
+      );
     });
 
     test('redirects disabled modules and their sub-routes', () {
       const features = AppFeatures({AppFeatures.pos: false});
-      expect(moduleRouteRedirect('/pos', features), fallbackRoute);
-      expect(moduleRouteRedirect('/checkout', features), fallbackRoute);
+      expect(moduleRouteRedirect('/pos', features, testAdmin), '/home');
+      expect(moduleRouteRedirect('/checkout', features, testAdmin), '/home');
     });
 
     test('dashboard can never be disabled', () {
-      expect(moduleRouteRedirect('/dashboard', const AppFeatures()), isNull);
+      expect(
+        moduleRouteRedirect('/dashboard', const AppFeatures(), testSeller),
+        isNull,
+      );
     });
   });
 

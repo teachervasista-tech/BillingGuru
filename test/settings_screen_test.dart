@@ -23,7 +23,7 @@ void main() {
 
   testWidgets('Tax & Currency tab displays the asset currency', (tester) async {
     SharedPreferences.setMockInitialValues({});
-    final container = await createTestContainer();
+    final container = await createTestContainer(user: testInstaller);
     addTearDown(container.dispose);
     await container.read(defaultTaxRateProvider.notifier).loadSavedTaxRate();
 
@@ -33,6 +33,8 @@ void main() {
         child: const MaterialApp(home: SettingsScreen()),
       ),
     );
+    await tester.tap(find.text('Tax'));
+    await tester.pumpAndSettle();
 
     expect(find.text('Tax percentage'), findsOneWidget);
     expect(find.text('Configured currency'), findsNothing);
@@ -42,7 +44,10 @@ void main() {
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
-    final container = await createTestContainer();
+    tester.view.physicalSize = const Size(1400, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final container = await createTestContainer(user: testInstaller);
     addTearDown(container.dispose);
     await container.read(defaultTaxRateProvider.notifier).loadSavedTaxRate();
     await container.read(receiptTemplateProvider.notifier).loadSavedTemplate();

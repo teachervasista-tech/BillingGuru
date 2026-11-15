@@ -19,67 +19,53 @@ final userServiceProvider = Provider<UserService>((ref) {
 });
 
 class AuthState {
-  const AuthState({this.needsSetup = false, this.user});
+  const AuthState({this.user});
 
-  /// No accounts exist yet: the first admin must be created.
-  final bool needsSetup;
   final AppUser? user;
 }
 
-final authProvider = AsyncNotifierProvider<AuthNotifier, AuthState>(
+/// Who is signed in. Accounts always exist: the installer account is created
+/// with the database (see migrations), so there is no first-run setup.
+final authProvider = NotifierProvider<AuthNotifier, AuthState>(
   AuthNotifier.new,
 );
 
-class AuthNotifier extends AsyncNotifier<AuthState> {
+class AuthNotifier extends Notifier<AuthState> {
   UserService get _users => ref.read(userServiceProvider);
 
   @override
-  Future<AuthState> build() async {
-    return AuthState(needsSetup: !await _users.hasUsers());
-  }
+  AuthState build() => const AuthState();
 
   Future<void> login(String username, String password) async {
     final user = await _users.authenticate(username, password);
-    state = AsyncData(AuthState(user: user));
+    state = AuthState(user: user);
   }
 
-  Future<void> createFirstAdmin({
-    required String username,
-    required String displayName,
-    required String password,
-  }) async {
-    if (await _users.hasUsers()) {
-      throw const AuthException('An admin account already exists.');
-    }
-    final user = await _users.createUser(
-      username: username,
-      displayName: displayName,
-      password: password,
-      role: UserRole.admin,
-    );
-    state = AsyncData(AuthState(user: user));
+  /// Sets a new password for the signed-in user who was required to change
+  /// it (installer default password), then lets them in.
+  Future<void> completeRequiredPasswordChange(String newPassword) async {
+    final user = state.user;
+    if (user == null) return;
+    await _users.setPassword(user.id, newPassword);
+    state = AuthState(user: user.copyWith(mustChangePassword: false));
   }
 
   void logout() {
-    state = const AsyncData(AuthState());
+    state = const AuthState();
   }
 
-  /// Re-reads whether accounts exist (e.g. after restoring a backup) and
-  /// signs the current user out.
-  Future<void> reset() async {
-    state = AsyncData(AuthState(needsSetup: !await _users.hasUsers()));
-  }
-
-  /// Keeps the signed-in user's name/role current after an admin edit.
-  void refreshCurrent(AppUser updated) {
-    if (state.value?.user?.id == updated.id) {
-      state = AsyncData(AuthState(user: updated));
-    }
-  }
+  /// Signs out, e.g. after restoring a backup (accounts may have changed).
+  Future<void> reset() async => logout();
 }
 
+/// Shows the first-use hint on the login screen.
+final isFirstUseProvider = FutureProvider<bool>((ref) {
+  ref.watch(authProvider);
+  return ref.watch(userServiceProvider).isFirstUse();
+});
+
 final currentUserProvider = Provider<AppUser?>((ref) {
-  return ref.watch(authProvider).value?.user;
+  return ref.watch(authProvider).user;
 });
 
 /// Whether the signed-in user has [Permission]. False when signed out.

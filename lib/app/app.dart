@@ -16,10 +16,9 @@ class BillingGuru extends ConsumerWidget {
       appSettingsProvider.select((settings) => settings.colorThemeId),
     );
     final theme = buildAppTheme(AppColorTheme.byId(themeId));
-    final auth = ref.watch(authProvider);
+    final user = ref.watch(currentUserProvider);
 
-    // Signed in: the full app.
-    if (auth.value?.user != null) {
+    if (user != null && !user.mustChangePassword) {
       return MaterialApp.router(
         title: 'Billing Guru',
         theme: theme,
@@ -27,15 +26,12 @@ class BillingGuru extends ConsumerWidget {
       );
     }
 
-    final Widget home = auth.when(
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (error, _) => Scaffold(
-        body: Center(child: Text('Unable to load user accounts:\n$error')),
-      ),
-      data: (state) =>
-          state.needsSetup ? const SetupAdminScreen() : const LoginScreen(),
+    return MaterialApp(
+      title: 'Billing Guru',
+      theme: theme,
+      home: user == null
+          ? const LoginScreen()
+          : const RequiredPasswordChangeScreen(),
     );
-    return MaterialApp(title: 'Billing Guru', theme: theme, home: home);
   }
 }

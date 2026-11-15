@@ -15,6 +15,8 @@ class AppSettings {
     this.lowStockThreshold = 10,
     this.colorThemeId = 'blue',
     this.features = const AppFeatures(),
+    this.receiptLogoSource = 'default',
+    this.receiptLogoStyle = 'blackAndWhite',
   });
 
   /// Receipt header: business name on the first line, then address etc.
@@ -28,6 +30,12 @@ class AppSettings {
   final String colorThemeId;
   final AppFeatures features;
 
+  /// `default` (bundled logo), `custom` (uploaded) or `none`.
+  final String receiptLogoSource;
+
+  /// `LogoPrintStyle` name used to convert an uploaded logo.
+  final String receiptLogoStyle;
+
   static const fallback = AppSettings();
 
   static const keyBusinessDetails = 'business_details';
@@ -37,6 +45,8 @@ class AppSettings {
   static const keyLowStockThreshold = 'low_stock_threshold';
   static const keyColorTheme = 'color_theme';
   static const featurePrefix = 'feature.';
+  static const keyReceiptLogoSource = 'receipt_logo_source';
+  static const keyReceiptLogoStyle = 'receipt_logo_style';
 
   String get businessName {
     final first = businessDetails.split('\n').first.trim();
@@ -51,6 +61,8 @@ class AppSettings {
     int? lowStockThreshold,
     String? colorThemeId,
     AppFeatures? features,
+    String? receiptLogoSource,
+    String? receiptLogoStyle,
   }) {
     return AppSettings(
       businessDetails: businessDetails ?? this.businessDetails,
@@ -61,6 +73,8 @@ class AppSettings {
       lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
       colorThemeId: colorThemeId ?? this.colorThemeId,
       features: features ?? this.features,
+      receiptLogoSource: receiptLogoSource ?? this.receiptLogoSource,
+      receiptLogoStyle: receiptLogoStyle ?? this.receiptLogoStyle,
     );
   }
 
@@ -72,6 +86,8 @@ class AppSettings {
       keyFinancialYearStart: '$financialYearStartMonth',
       keyLowStockThreshold: '$lowStockThreshold',
       keyColorTheme: colorThemeId,
+      keyReceiptLogoSource: receiptLogoSource,
+      keyReceiptLogoStyle: receiptLogoStyle,
       for (final key in AppFeatures.allKeys)
         '$featurePrefix$key': '${features.isEnabled(key)}',
     };
@@ -92,6 +108,8 @@ class AppSettings {
       financialYearStartMonth: intIn(keyFinancialYearStart, 1, 12),
       lowStockThreshold: intIn(keyLowStockThreshold, 0, 1000000),
       colorThemeId: stored[keyColorTheme],
+      receiptLogoSource: stored[keyReceiptLogoSource],
+      receiptLogoStyle: stored[keyReceiptLogoStyle],
       features: features.merge({
         for (final key in AppFeatures.allKeys)
           if (stored['$featurePrefix$key'] case final value?)

@@ -7,8 +7,13 @@ import '../../data/user_service.dart';
 import '../auth_providers.dart';
 import 'user_dialogs.dart';
 
+/// Accounts shown in Settings → Users. The installer account is only
+/// listed for the installer.
 final usersProvider = FutureProvider<List<AppUser>>((ref) {
-  return ref.watch(userServiceProvider).getUsers();
+  final me = ref.watch(currentUserProvider);
+  return ref
+      .watch(userServiceProvider)
+      .getUsers(includeInstaller: me?.isInstaller ?? false);
 });
 
 /// Settings → Users (admin only): create sellers/admins, reset passwords,
@@ -44,10 +49,10 @@ class UsersSettingsTab extends ConsumerWidget {
         SectionCard(
           title: 'Users',
           description:
-              'Sellers can ring up sales, look up products, stock and sales '
-              'history, and manage customers. Only admins can open Settings, '
-              'Expenses and Reports, edit products or stock, and void or '
-              'return sales.',
+              'Admins run the shop: products and stock, expenses, reports, '
+              'voids and returns, users and categories. Sellers ring up sales, '
+              'look up products, stock and sales history, and manage '
+              'customers; they have no access to Settings.',
           trailing: FilledButton.icon(
             key: const Key('addUserButton'),
             onPressed: () async {
@@ -69,14 +74,16 @@ class UsersSettingsTab extends ConsumerWidget {
                   ListTile(
                     key: Key('user-${user.username}'),
                     leading: CircleAvatar(
-                      backgroundColor: user.isAdmin
+                      backgroundColor: !user.isAdmin && !user.isInstaller
+                          ? null
+                          : user.isAdmin
                           ? Theme.of(context).colorScheme.primaryContainer
-                          : null,
-                      child: Icon(
-                        user.isAdmin
-                            ? Icons.admin_panel_settings_outlined
-                            : Icons.person_outline,
-                      ),
+                          : Theme.of(context).colorScheme.tertiaryContainer,
+                      child: Icon(switch (user.role) {
+                        UserRole.installer => Icons.build_outlined,
+                        UserRole.admin => Icons.admin_panel_settings_outlined,
+                        UserRole.seller => Icons.person_outline,
+                      }),
                     ),
                     title: Text(
                       '${user.displayName}'
@@ -140,7 +147,7 @@ class UsersSettingsTab extends ConsumerWidget {
                           value: 'password',
                           child: Text('Reset password'),
                         ),
-                        if (user.id != me?.id) ...[
+                        if (user.id != me?.id && !user.isInstaller) ...[
                           PopupMenuItem(
                             value: 'role',
                             child: Text(

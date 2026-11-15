@@ -24,6 +24,14 @@ final testAdmin = AppUser(
   createdAt: DateTime(2026),
 );
 
+final testInstaller = AppUser(
+  id: 'user-installer',
+  username: 'installer',
+  displayName: 'Installer',
+  role: UserRole.installer,
+  createdAt: DateTime(2026),
+);
+
 final testSeller = AppUser(
   id: 'u-seller',
   username: 'seller',

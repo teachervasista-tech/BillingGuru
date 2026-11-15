@@ -12,8 +12,15 @@ class AppFileStorage {
   static const productImagesFolder = 'product_images';
   static const expenseAttachmentsFolder = 'expense_attachments';
 
+  /// Receipt logo (original upload and print-ready version).
+  static const brandingFolder = 'branding';
+
   /// Folders that belong in a backup.
-  static const backupFolders = [productImagesFolder, expenseAttachmentsFolder];
+  static const backupFolders = [
+    productImagesFolder,
+    expenseAttachmentsFolder,
+    brandingFolder,
+  ];
 
   static const imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'bmp'];
   static const attachmentExtensions = [...imageExtensions, 'pdf'];

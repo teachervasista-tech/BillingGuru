@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/app_info.dart';
+import '../../../../core/database/migrations.dart';
 import '../../../../core/settings/app_settings_provider.dart';
 import '../../data/user_service.dart';
 import '../auth_providers.dart';
@@ -126,6 +127,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     return _AuthCard(
       title: 'Sign in',
+      subtitle: ref.watch(isFirstUseProvider).value == true
+          ? 'First time? Sign in as "$installerUsername" with password '
+                '"$installerDefaultPassword" to set up the shop.'
+          : null,
       child: Form(
         key: _formKey,
         child: AutofillGroup(
@@ -194,18 +199,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 }
 
-/// Shown on first start (no accounts yet) to create the admin.
-class SetupAdminScreen extends ConsumerStatefulWidget {
-  const SetupAdminScreen({super.key});
+/// Shown after sign-in when the account still has a default password
+/// (the installer on first use).
+class RequiredPasswordChangeScreen extends ConsumerStatefulWidget {
+  const RequiredPasswordChangeScreen({super.key});
 
   @override
-  ConsumerState<SetupAdminScreen> createState() => _SetupAdminScreenState();
+  ConsumerState<RequiredPasswordChangeScreen> createState() =>
+      _RequiredPasswordChangeScreenState();
 }
 
-class _SetupAdminScreenState extends ConsumerState<SetupAdminScreen> {
+class _RequiredPasswordChangeScreenState
+    extends ConsumerState<RequiredPasswordChangeScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _name = TextEditingController();
-  final _username = TextEditingController(text: 'admin');
   final _password = TextEditingController();
   final _confirm = TextEditingController();
   String? _error;
@@ -213,14 +219,17 @@ class _SetupAdminScreenState extends ConsumerState<SetupAdminScreen> {
 
   @override
   void dispose() {
-    for (final c in [_name, _username, _password, _confirm]) {
-      c.dispose();
-    }
+    _password.dispose();
+    _confirm.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (_busy || !_formKey.currentState!.validate()) return;
+    if (_password.text == installerDefaultPassword) {
+      setState(() => _error = 'Choose a password other than the default.');
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
@@ -228,11 +237,7 @@ class _SetupAdminScreenState extends ConsumerState<SetupAdminScreen> {
     try {
       await ref
           .read(authProvider.notifier)
-          .createFirstAdmin(
-            username: _username.text,
-            displayName: _name.text,
-            password: _password.text,
-          );
+          .completeRequiredPasswordChange(_password.text);
     } on AuthException catch (error) {
       if (mounted) setState(() => _error = error.message);
     } finally {
@@ -242,53 +247,36 @@ class _SetupAdminScreenState extends ConsumerState<SetupAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(currentUserProvider);
     return _AuthCard(
-      title: 'Create the admin account',
+      title: 'Set a new password',
       subtitle:
-          'The admin manages settings and seller accounts. Keep this '
-          'password safe — it cannot be recovered.',
+          '${user?.displayName ?? 'This account'} still uses the default '
+          'password. Choose a new one to continue — keep it safe, it cannot '
+          'be recovered.',
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextFormField(
-              key: const Key('setupName'),
-              controller: _name,
-              autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Your name',
-                prefixIcon: Icon(Icons.badge_outlined),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              key: const Key('setupUsername'),
-              controller: _username,
-              decoration: const InputDecoration(
-                labelText: 'Username',
-                prefixIcon: Icon(Icons.person_outline),
-              ),
-              validator: UserService.validateUsername,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              key: const Key('setupPassword'),
+              key: const Key('newPassword'),
               controller: _password,
               obscureText: true,
+              autofocus: true,
               decoration: const InputDecoration(
-                labelText: 'Password',
+                labelText: 'New password',
                 prefixIcon: Icon(Icons.lock_outline),
               ),
               validator: UserService.validatePassword,
             ),
             const SizedBox(height: 12),
             TextFormField(
-              key: const Key('setupConfirm'),
+              key: const Key('confirmPassword'),
               controller: _confirm,
               obscureText: true,
               decoration: const InputDecoration(
-                labelText: 'Confirm password',
+                labelText: 'Confirm new password',
                 prefixIcon: Icon(Icons.lock_outline),
               ),
               validator: (v) =>
@@ -304,10 +292,14 @@ class _SetupAdminScreenState extends ConsumerState<SetupAdminScreen> {
             ],
             const SizedBox(height: 20),
             FilledButton.icon(
-              key: const Key('setupButton'),
+              key: const Key('savePasswordButton'),
               onPressed: _busy ? null : _submit,
-              icon: const Icon(Icons.admin_panel_settings_outlined),
-              label: const Text('Create admin and sign in'),
+              icon: const Icon(Icons.check),
+              label: const Text('Save and continue'),
+            ),
+            TextButton(
+              onPressed: () => ref.read(authProvider.notifier).logout(),
+              child: const Text('Sign out'),
             ),
           ],
         ),

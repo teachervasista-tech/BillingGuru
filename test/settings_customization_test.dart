@@ -78,7 +78,7 @@ void main() {
   ) async {
     tester.view.physicalSize = const Size(1400, 2400);
     addTearDown(tester.view.reset);
-    final container = await createTestContainer();
+    final container = await createTestContainer(user: testAdmin);
     addTearDown(container.dispose);
     await container
         .read(appSettingsProvider.notifier)

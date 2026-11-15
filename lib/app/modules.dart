@@ -79,12 +79,14 @@ final List<AppModule> appModules = [
     label: 'Home',
     route: '/home',
     featureKey: AppFeatures.home,
+    permission: Permission.operate,
     icon: _navAsset('home', 24),
     selectedIcon: _navAsset('home', 28),
     builder: (_, _) => const HomeScreen(),
   ),
   AppModule(
     id: 'dashboard',
+    permission: Permission.operate,
     label: 'Dashboard',
     route: '/dashboard',
     icon: const Icon(Icons.dashboard_outlined),
@@ -97,6 +99,7 @@ final List<AppModule> appModules = [
     label: 'PoS',
     route: '/pos',
     featureKey: AppFeatures.pos,
+    permission: Permission.operate,
     icon: const Icon(Icons.point_of_sale_outlined),
     selectedIcon: const Icon(Icons.point_of_sale),
     builder: (_, _) => const PosScreen(),
@@ -113,6 +116,7 @@ final List<AppModule> appModules = [
     label: 'Products',
     route: '/products',
     featureKey: AppFeatures.products,
+    permission: Permission.operate,
     icon: const Icon(Icons.inventory_2_outlined),
     selectedIcon: const Icon(Icons.inventory_2),
     builder: (_, _) => const ProductsScreen(),
@@ -122,6 +126,7 @@ final List<AppModule> appModules = [
     label: 'Customers',
     route: '/customers',
     featureKey: AppFeatures.customers,
+    permission: Permission.operate,
     icon: const Icon(Icons.people_outline),
     selectedIcon: const Icon(Icons.people),
     builder: (_, _) => const CustomersScreen(),
@@ -131,6 +136,7 @@ final List<AppModule> appModules = [
     label: 'Sales',
     route: '/sales',
     featureKey: AppFeatures.sales,
+    permission: Permission.operate,
     icon: const Icon(Icons.receipt_long_outlined),
     selectedIcon: const Icon(Icons.receipt_long),
     builder: (_, _) => const SalesHistoryScreen(),
@@ -160,6 +166,7 @@ final List<AppModule> appModules = [
     label: 'Inventory',
     route: '/inventory',
     featureKey: AppFeatures.inventory,
+    permission: Permission.operate,
     icon: const Icon(Icons.warehouse_outlined),
     selectedIcon: const Icon(Icons.warehouse),
     builder: (_, _) => const InventoryScreen(),
@@ -169,7 +176,7 @@ final List<AppModule> appModules = [
     label: 'Settings',
     route: '/settings',
     featureKey: AppFeatures.settings,
-    permission: Permission.manageSettings,
+    permission: Permission.openSettings,
     icon: const Icon(Icons.settings_outlined),
     selectedIcon: const Icon(Icons.settings),
     builder: (_, _) => const SettingsScreen(),
@@ -178,8 +185,21 @@ final List<AppModule> appModules = [
 
 const fallbackRoute = '/dashboard';
 
+/// First route [user] may open: Home (if on), Dashboard, else the first
+/// available module (e.g. Settings for the installer).
+String landingRoute(AppFeatures features, AppUser? user) {
+  for (final id in ['home', 'dashboard']) {
+    final module = appModules.firstWhere((m) => m.id == id);
+    if (module.isAvailable(features, user)) return module.route;
+  }
+  for (final module in appModules) {
+    if (module.isAvailable(features, user)) return module.route;
+  }
+  return fallbackRoute;
+}
+
 /// Redirects disabled or forbidden modules (and their sub-routes) to the
-/// dashboard. Without a [user], permission-restricted modules are refused.
+/// user's landing route. Without a [user], restricted modules are refused.
 String? moduleRouteRedirect(
   String location,
   AppFeatures features, [
@@ -187,11 +207,16 @@ String? moduleRouteRedirect(
 ]) {
   for (final module in appModules) {
     if (module.matches(location)) {
-      return module.isAvailable(features, user) ? null : fallbackRoute;
+      if (module.isAvailable(features, user)) return null;
+      final landing = user == null
+          ? fallbackRoute
+          : landingRoute(features, user);
+      return landing == location ? null : landing;
     }
   }
   return null;
 }
 
-String initialRoute(AppFeatures features) =>
-    features.homeEnabled ? '/home' : fallbackRoute;
+String initialRoute(AppFeatures features, [AppUser? user]) => user == null
+    ? (features.homeEnabled ? '/home' : fallbackRoute)
+    : landingRoute(features, user);

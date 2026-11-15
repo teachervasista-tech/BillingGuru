@@ -1,8 +1,12 @@
 import 'package:billing_guru/core/tax/tax_rate_provider.dart';
+import 'package:billing_guru/features/auth/presentation/auth_providers.dart';
 import 'package:billing_guru/features/settings/presentation/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'helpers/test_container.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -36,7 +40,9 @@ void main() {
 
   testWidgets('Settings saves the default tax percentage', (tester) async {
     SharedPreferences.setMockInitialValues({});
-    final container = ProviderContainer();
+    final container = ProviderContainer(
+      overrides: [currentUserProvider.overrideWithValue(testInstaller)],
+    );
     addTearDown(container.dispose);
     await container.read(defaultTaxRateProvider.notifier).loadSavedTaxRate();
 
@@ -46,6 +52,8 @@ void main() {
         child: const MaterialApp(home: SettingsScreen()),
       ),
     );
+    await tester.tap(find.text('Tax'));
+    await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField).first, '12');
     await tester.tap(find.text('Save tax rate'));

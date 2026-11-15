@@ -66,7 +66,7 @@ class _AddUserDialogState extends ConsumerState<AddUserDialog> {
             children: [
               SegmentedButton<UserRole>(
                 segments: [
-                  for (final role in UserRole.values)
+                  for (final role in UserRole.assignable)
                     ButtonSegment(value: role, label: Text(role.label)),
                 ],
                 selected: {_role},
@@ -77,7 +77,8 @@ class _AddUserDialogState extends ConsumerState<AddUserDialog> {
                 _role == UserRole.seller
                     ? 'Sellers can sell, view products, stock and sales, and '
                           'manage customers.'
-                    : 'Admins can do everything, including settings and users.',
+                    : 'Admins run the shop: products, stock, expenses, '
+                          'reports, voids, users and categories.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 12),

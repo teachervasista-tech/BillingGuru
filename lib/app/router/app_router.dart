@@ -17,7 +17,10 @@ String? featureRouteRedirect(String location, [AppFeatures? features]) =>
 final appRouterProvider = Provider<GoRouter>((ref) {
   ref.watch(currentUserProvider.select((user) => user?.id));
   return GoRouter(
-    initialLocation: initialRoute(ref.read(appFeaturesProvider)),
+    initialLocation: initialRoute(
+      ref.read(appFeaturesProvider),
+      ref.read(currentUserProvider),
+    ),
     redirect: (context, state) => moduleRouteRedirect(
       state.uri.path,
       ref.read(appFeaturesProvider),

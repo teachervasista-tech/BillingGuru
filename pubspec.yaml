@@ -64,6 +64,7 @@ dependencies:
   xml: ^7.1.0
   mobile_scanner: ^5.2.3
   crypto: ^3.0.8
+  image: ^4.13.1
 
 dev_dependencies:
   flutter_test:

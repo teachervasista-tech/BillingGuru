@@ -14,7 +14,7 @@ final Map<int, Migration> appMigrations = {
   4: _v4Expenses,
   5: _v5CustomersAndReturns,
   6: _v6Users,
-  7: _v7ProductCategories,
+  7: _v7CategoriesAndInstaller,
 };
 
 /// Palette shared by product and expense category pickers (ARGB).
@@ -35,6 +35,13 @@ const categoryPalette = [
 
 /// Name used when a product has no category.
 const defaultProductCategory = 'Other';
+
+/// Built-in installer account. The default password is `installer`; it must
+/// be changed at first sign-in. (Pre-computed PBKDF2 hash of "installer".)
+const installerUsername = 'installer';
+const installerDefaultPassword = 'installer';
+const _installerDefaultHash =
+    r'pbkdf2-sha256$60000$k/8EFQ0kCH+sNsi0hXivDA==$GQxwOH0u7/y9xeTYW7paf3Ae8g5GYfT0RqdYBhY2tWI=';
 
 /// Built-in expense categories (id, name, ARGB color). `cat-stock` is used
 /// when receiving stock with a cost.
@@ -398,8 +405,11 @@ Future<void> _v6Users(DatabaseExecutor db) async {
 }
 
 // v6 -> v7: managed product categories (name, color, order, archive),
-// seeded from the free-text categories already on products.
-Future<void> _v7ProductCategories(DatabaseExecutor db) async {
+// seeded from the free-text categories already on products; built-in
+// installer account.
+Future<void> _v7CategoriesAndInstaller(DatabaseExecutor db) async {
+  await _createInstallerAccount(db);
+
   await db.execute('''
     CREATE TABLE IF NOT EXISTS product_categories (
       id TEXT PRIMARY KEY,
@@ -428,4 +438,37 @@ Future<void> _v7ProductCategories(DatabaseExecutor db) async {
     }, conflictAlgorithm: ConflictAlgorithm.ignore);
     if (inserted > 0) order++;
   }
+}
+
+/// Part of v7: the installer account that sets the system up.
+Future<void> _createInstallerAccount(DatabaseExecutor db) async {
+  await addColumnIfMissing(
+    db,
+    'users',
+    'must_change_password',
+    'INTEGER NOT NULL DEFAULT 0',
+  );
+  final existing = await db.query(
+    'users',
+    columns: ['id'],
+    where: "role = 'installer'",
+    limit: 1,
+  );
+  if (existing.isNotEmpty) return;
+  final taken = await db.query(
+    'users',
+    columns: ['id'],
+    where: 'username = ?',
+    whereArgs: [installerUsername],
+  );
+  await db.insert('users', {
+    'id': 'user-installer',
+    'username': taken.isEmpty ? installerUsername : '${installerUsername}1',
+    'display_name': 'Installer',
+    'role': 'installer',
+    'password_hash': _installerDefaultHash,
+    'is_active': 1,
+    'must_change_password': 1,
+    'created_at': DateTime.now().toIso8601String(),
+  });
 }

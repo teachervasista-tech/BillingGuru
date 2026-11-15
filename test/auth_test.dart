@@ -2,6 +2,7 @@ import 'package:billing_guru/app/app.dart';
 import 'package:billing_guru/app/modules.dart';
 import 'package:billing_guru/core/config/app_features.dart';
 import 'package:billing_guru/core/database/app_database.dart';
+import 'package:billing_guru/core/database/migrations.dart';
 import 'package:billing_guru/features/auth/data/user_service.dart';
 import 'package:billing_guru/features/auth/presentation/auth_providers.dart';
 import 'package:billing_guru/features/checkout/data/repositories/checkout_repository.dart';
@@ -45,9 +46,8 @@ void main() {
     );
 
     test('creates, authenticates and rejects bad credentials', () async {
-      expect(await users.hasUsers(), isFalse);
+      expect(await users.hasUsers(), isTrue, reason: 'installer is built in');
       await admin();
-      expect(await users.hasUsers(), isTrue);
 
       final signedIn = await users.authenticate('ADMIN', 'admin123');
       expect(signedIn.displayName, 'Owner');
@@ -168,34 +168,107 @@ void main() {
     });
   });
 
+  group('installer account', () {
+    late AppDatabase database;
+    late UserService users;
+
+    setUp(() {
+      database = createTestDatabase();
+      users = UserService(database: database, hasher: testHasher);
+    });
+    tearDown(() => database.close());
+
+    test('is created with the database and must change its password', () async {
+      expect(await users.isFirstUse(), isTrue);
+      final installer = await users.authenticate(
+        installerUsername,
+        installerDefaultPassword,
+      );
+      expect(installer.isInstaller, isTrue);
+      expect(installer.mustChangePassword, isTrue);
+
+      await users.setPassword(installer.id, 'setup-pass');
+      expect(await users.isFirstUse(), isFalse);
+      final again = await users.authenticate(installerUsername, 'setup-pass');
+      expect(again.mustChangePassword, isFalse);
+    });
+
+    test('is hidden from admins and cannot be changed or recreated', () async {
+      final installer = await users.authenticate(
+        installerUsername,
+        installerDefaultPassword,
+      );
+      expect((await users.getUsers()).where((u) => u.isInstaller), isEmpty);
+      expect(
+        (await users.getUsers(includeInstaller: true)).single.isInstaller,
+        isTrue,
+      );
+      expect(
+        () => users.updateUser(installer.id, isActive: false),
+        throwsA(isA<AuthException>()),
+      );
+      expect(
+        () => users.createUser(
+          username: 'installer2',
+          displayName: '',
+          password: 'whatever1',
+          role: UserRole.installer,
+        ),
+        throwsA(isA<AuthException>()),
+      );
+    });
+  });
+
   group('permissions', () {
     const features = AppFeatures();
 
-    test('sellers are kept out of settings, expenses and reports', () {
+    test('installer: only Settings, landing there', () {
+      expect(landingRoute(features, testInstaller), '/settings');
+      for (final route in [
+        '/home',
+        '/pos',
+        '/sales',
+        '/expenses',
+        '/reports',
+      ]) {
+        expect(
+          moduleRouteRedirect(route, features, testInstaller),
+          '/settings',
+          reason: route,
+        );
+      }
+      expect(moduleRouteRedirect('/settings', features, testInstaller), isNull);
+    });
+
+    test('admin: everything; seller: no settings, expenses or reports', () {
+      for (final route in ['/settings', '/expenses', '/reports', '/pos']) {
+        expect(moduleRouteRedirect(route, features, testAdmin), isNull);
+      }
       for (final route in ['/settings', '/expenses', '/reports']) {
         expect(
           moduleRouteRedirect(route, features, testSeller),
-          fallbackRoute,
+          '/home',
           reason: route,
         );
-        expect(moduleRouteRedirect(route, features, testAdmin), isNull);
       }
       for (final route in ['/pos', '/sales', '/products', '/customers']) {
         expect(moduleRouteRedirect(route, features, testSeller), isNull);
       }
     });
 
-    test('role permissions', () {
+    test('settings tabs by role', () {
+      expect(testInstaller.can(Permission.configureSystem), isTrue);
+      expect(testInstaller.can(Permission.manageUsers), isTrue);
+      expect(testInstaller.can(Permission.manageCategories), isFalse);
+      expect(testAdmin.can(Permission.configureSystem), isFalse);
       expect(testAdmin.can(Permission.manageUsers), isTrue);
-      expect(
-        Permission.values.where(testSeller.can),
-        isEmpty,
-        reason: 'sellers only have the unrestricted basics',
-      );
+      expect(testAdmin.can(Permission.manageCategories), isTrue);
+      expect(testSeller.can(Permission.openSettings), isFalse);
+      expect(testSeller.role.permissions, [Permission.operate]);
     });
   });
 
-  testWidgets('first start: create admin, then a seller sees fewer modules', (
+  testWidgets('installer sets up; admin and seller see their own areas', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1600, 1200);
@@ -218,56 +291,81 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // No accounts yet: setup screen.
-    expect(find.text('Create the admin account'), findsOneWidget);
-    await tester.enterText(find.byKey(const Key('setupName')), 'Owner');
-    await tester.enterText(find.byKey(const Key('setupPassword')), 'admin123');
-    await tester.enterText(find.byKey(const Key('setupConfirm')), 'admin123');
-    await tester.tap(find.byKey(const Key('setupButton')));
+    Future<void> signIn(String username, String password) async {
+      await tester.enterText(find.byKey(const Key('loginUsername')), username);
+      await tester.enterText(find.byKey(const Key('loginPassword')), password);
+      await tester.tap(find.byKey(const Key('loginButton')));
+      await tester.pumpAndSettle();
+    }
+
+    Finder tab(String label) =>
+        find.descendant(of: find.byType(TabBar), matching: find.text(label));
+
+    // First use: hint, then the installer must replace the default password.
+    expect(find.textContaining('First time?'), findsOneWidget);
+    await signIn(installerUsername, installerDefaultPassword);
+    expect(find.text('Set a new password'), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('newPassword')), 'setup-pass');
+    await tester.enterText(
+      find.byKey(const Key('confirmPassword')),
+      'setup-pass',
+    );
+    await tester.tap(find.byKey(const Key('savePasswordButton')));
     await tester.pumpAndSettle();
 
-    final rail = find.byType(NavigationRail);
-    expect(rail, findsOneWidget);
-    expect(
-      find.descendant(of: rail, matching: find.text('Settings')),
-      findsOneWidget,
+    // Installer lands on Settings: system tabs and Users only.
+    for (final label in ['Business', 'Printer', 'Modules', 'Data', 'Users']) {
+      expect(tab(label), findsOneWidget, reason: label);
+    }
+    expect(tab('Product categories'), findsNothing);
+    expect(find.text('PoS'), findsNothing);
+    expect(find.byKey(const Key('userMenu')), findsOneWidget);
+
+    final service = container.read(userServiceProvider);
+    await service.createUser(
+      username: 'owner',
+      displayName: 'Owner',
+      password: 'owner123',
+      role: UserRole.admin,
+    );
+    await service.createUser(
+      username: 'sam',
+      displayName: 'Sam',
+      password: 'seller1',
+      role: UserRole.seller,
     );
 
-    // Admin creates a seller (service call; the dialog is covered above).
-    await container
-        .read(userServiceProvider)
-        .createUser(
-          username: 'sam',
-          displayName: 'Sam',
-          password: 'seller1',
-          role: UserRole.seller,
-        );
-
-    // Sign out -> login screen -> sign in as the seller.
+    // Admin: Users and categories in Settings, no system tabs.
     container.read(authProvider.notifier).logout();
     await tester.pumpAndSettle();
-    expect(find.text('Sign in'), findsWidgets);
-
-    await tester.enterText(find.byKey(const Key('loginUsername')), 'sam');
-    await tester.enterText(find.byKey(const Key('loginPassword')), 'wrong!!');
-    await tester.tap(find.byKey(const Key('loginButton')));
+    expect(find.textContaining('First time?'), findsNothing);
+    await signIn('owner', 'owner123');
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationRail),
+        matching: find.text('Settings'),
+      ),
+    );
     await tester.pumpAndSettle();
-    expect(find.text('Incorrect username or password.'), findsOneWidget);
+    expect(tab('Users'), findsOneWidget);
+    expect(tab('Product categories'), findsOneWidget);
+    expect(tab('Business'), findsNothing);
+    expect(tab('Data'), findsNothing);
 
-    await tester.enterText(find.byKey(const Key('loginPassword')), 'seller1');
-    await tester.tap(find.byKey(const Key('loginButton')));
+    // Seller: no Settings at all.
+    container.read(authProvider.notifier).logout();
     await tester.pumpAndSettle();
-
-    final sellerRail = find.byType(NavigationRail);
+    await signIn('sam', 'seller1');
+    final rail = find.byType(NavigationRail);
     for (final hidden in ['Settings', 'Expenses', 'Reports']) {
       expect(
-        find.descendant(of: sellerRail, matching: find.text(hidden)),
+        find.descendant(of: rail, matching: find.text(hidden)),
         findsNothing,
         reason: hidden,
       );
     }
     expect(
-      find.descendant(of: sellerRail, matching: find.text('Sales')),
+      find.descendant(of: rail, matching: find.text('Sales')),
       findsOneWidget,
     );
   });

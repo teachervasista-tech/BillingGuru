@@ -38,17 +38,34 @@ class UserService {
         : null;
   }
 
+  /// True until the installer has replaced the default password, i.e. the
+  /// shop has not been set up yet.
+  Future<bool> isFirstUse() async {
+    final db = await database.database;
+    final rows = await db.query(
+      'users',
+      columns: ['must_change_password'],
+      where: "role = 'installer'",
+      limit: 1,
+    );
+    return rows.isNotEmpty && rows.first.boolOf('must_change_password');
+  }
+
   Future<bool> hasUsers() async {
     final db = await database.database;
     final row = (await db.rawQuery('SELECT COUNT(*) AS n FROM users')).first;
     return row.intOf('n') > 0;
   }
 
-  Future<List<AppUser>> getUsers() async {
+  /// All accounts; the installer is only listed when [includeInstaller].
+  Future<List<AppUser>> getUsers({bool includeInstaller = false}) async {
     final db = await database.database;
     final rows = await db.query(
       'users',
-      orderBy: "role = 'admin' DESC, display_name COLLATE NOCASE",
+      where: includeInstaller ? null : "role != 'installer'",
+      orderBy:
+          "role = 'installer' DESC, role = 'admin' DESC, "
+          'display_name COLLATE NOCASE',
     );
     return rows.map(AppUser.fromMap).toList();
   }
@@ -59,6 +76,9 @@ class UserService {
     required String password,
     required UserRole role,
   }) async {
+    if (!UserRole.assignable.contains(role)) {
+      throw const AuthException('Only Admin and Seller accounts can be added.');
+    }
     final usernameError = validateUsername(username);
     if (usernameError != null) throw AuthException('Username: $usernameError');
     final passwordError = validatePassword(password);
@@ -130,7 +150,7 @@ class UserService {
     final db = await database.database;
     await db.update(
       'users',
-      {'password_hash': hasher.hash(password)},
+      {'password_hash': hasher.hash(password), 'must_change_password': 0},
       where: 'id = ?',
       whereArgs: [userId],
     );
@@ -165,6 +185,14 @@ class UserService {
       );
       if (rows.isEmpty) throw const AuthException('User not found.');
       final current = AppUser.fromMap(rows.first);
+      if (current.isInstaller && (role != null || isActive != null)) {
+        throw const AuthException(
+          'The installer account cannot be disabled or changed.',
+        );
+      }
+      if (role != null && !UserRole.assignable.contains(role)) {
+        throw const AuthException('Users can only be Admin or Seller.');
+      }
       final losesAdmin =
           current.isAdmin &&
           current.isActive &&
