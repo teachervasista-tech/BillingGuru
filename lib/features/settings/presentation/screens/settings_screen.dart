@@ -16,15 +16,48 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../widgets/business_settings_tab.dart';
+import '../widgets/modules_settings_tab.dart';
+
+/// A Settings tab: label, icon and content.
+class SettingsTab {
+  const SettingsTab(this.label, this.icon, this.content);
+
+  final String label;
+  final IconData icon;
+  final Widget content;
+}
+
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final showPayments = ref.watch(appFeaturesProvider).checkoutEnabled;
+    final features = ref.watch(appFeaturesProvider);
+    final tabs = [
+      const SettingsTab('Tax', Icons.percent, _TaxAndCurrencyTab()),
+      const SettingsTab(
+        'Business',
+        Icons.storefront_outlined,
+        BusinessSettingsTab(),
+      ),
+      const SettingsTab(
+        'Printer',
+        Icons.receipt_long_outlined,
+        _PrinterSettingsTab(),
+      ),
+      if (features.checkoutEnabled)
+        const SettingsTab(
+          'Payment options',
+          Icons.payments_outlined,
+          _PaymentOptionsTab(),
+        ),
+      const SettingsTab('Modules', Icons.apps_outlined, ModulesSettingsTab()),
+    ];
 
     return DefaultTabController(
-      length: showPayments ? 3 : 2,
+      key: ValueKey(tabs.length),
+      length: tabs.length,
       child: Scaffold(
         appBar: AppBar(title: const Text('Settings')),
         body: Column(
@@ -42,27 +75,15 @@ class SettingsScreen extends ConsumerWidget {
                   isScrollable: true,
                   tabAlignment: TabAlignment.start,
                   tabs: [
-                    const Tab(icon: Icon(Icons.currency_rupee), text: 'Tax'),
-                    const Tab(
-                      icon: Icon(Icons.receipt_long_outlined),
-                      text: 'Printer',
-                    ),
-                    if (showPayments)
-                      const Tab(
-                        icon: Icon(Icons.payments_outlined),
-                        text: 'Payment options',
-                      ),
+                    for (final tab in tabs)
+                      Tab(icon: Icon(tab.icon), text: tab.label),
                   ],
                 ),
               ),
             ),
             Expanded(
               child: TabBarView(
-                children: [
-                  const _TaxAndCurrencyTab(),
-                  const _PrinterSettingsTab(),
-                  if (showPayments) const _PaymentOptionsTab(),
-                ],
+                children: [for (final tab in tabs) tab.content],
               ),
             ),
           ],
