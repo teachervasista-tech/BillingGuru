@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/database/database_provider.dart';
 import '../../data/models/product.dart';
+import '../../data/product_category_service.dart';
 import '../../data/repositories/product_repository.dart';
 import '../../data/services/product_import.dart';
 import '../../data/services/product_local_service.dart';
@@ -10,6 +11,15 @@ final productRepositoryProvider = Provider<ProductRepository>((ref) {
   return ProductRepository(
     localService: ProductLocalService(database: ref.watch(appDatabaseProvider)),
   );
+});
+
+final productCategoryServiceProvider = Provider<ProductCategoryService>((ref) {
+  return ProductCategoryService(database: ref.watch(appDatabaseProvider));
+});
+
+/// All managed product categories (incl. archived) with product counts.
+final productCategoriesProvider = FutureProvider<List<ProductCategory>>((ref) {
+  return ref.watch(productCategoryServiceProvider).getCategories();
 });
 
 final productViewModelProvider =
@@ -318,6 +328,7 @@ class ProductViewModel extends AsyncNotifier<ProductState> {
   }
 
   Future<void> _reloadAfterMutation() async {
+    ref.invalidate(productCategoriesProvider);
     final currentState = state.value;
 
     final refreshedState = await _loadState(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/product_category_service.dart';
 import '../view_models/product_view_model.dart';
 
 class ProductCategoryPane extends ConsumerWidget {
@@ -12,7 +13,15 @@ class ProductCategoryPane extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(productViewModelProvider.notifier);
 
+    final colors = {
+      for (final category
+          in ref.watch(productCategoriesProvider).value ??
+              const <ProductCategory>[])
+        category.name.toLowerCase(): Color(category.color),
+    };
+
     return CategoryNavigationPane(
+      colorFor: (name) => colors[name.toLowerCase()],
       categories: productState.categories,
       categoryCounts: productState.categoryCounts,
       selectedCategory: productState.selectedCategory,
@@ -29,12 +38,16 @@ class CategoryNavigationPane extends StatelessWidget {
     required this.categoryCounts,
     required this.selectedCategory,
     required this.onSelected,
+    this.colorFor,
   });
 
   final List<String> categories;
   final Map<String, int> categoryCounts;
   final String? selectedCategory;
   final ValueChanged<String?> onSelected;
+
+  /// Optional color dot per category.
+  final Color? Function(String category)? colorFor;
 
   @override
   Widget build(BuildContext context) {
@@ -44,8 +57,13 @@ class CategoryNavigationPane extends StatelessWidget {
     );
 
     Widget entry(String label, String? category) {
+      final color = category == null ? null : colorFor?.call(category);
       return ListTile(
         dense: true,
+        leading: color == null
+            ? null
+            : CircleAvatar(radius: 6, backgroundColor: color),
+        minLeadingWidth: 12,
         selected: selectedCategory == category,
         selectedTileColor: Theme.of(context).colorScheme.primaryContainer
             .withValues(alpha: 0.5),

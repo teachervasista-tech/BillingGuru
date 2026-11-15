@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/product.dart';
+import '../../data/product_category_service.dart';
 import '../view_models/product_view_model.dart';
 import 'product_image_picker.dart';
 
@@ -313,9 +314,12 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
   @override
   Widget build(BuildContext context) {
     final title = widget.isEditing ? 'Edit product' : 'Add product';
-    final categories =
-        ref.watch(productViewModelProvider).asData?.value.categories ??
-        const <String>[];
+    final categories = <String>[
+      for (final category
+          in ref.watch(productCategoriesProvider).value ??
+              const <ProductCategory>[])
+        if (category.isActive) category.name,
+    ];
 
     return AlertDialog(
       title: Text(title),

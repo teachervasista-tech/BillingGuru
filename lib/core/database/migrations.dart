@@ -14,7 +14,27 @@ final Map<int, Migration> appMigrations = {
   4: _v4Expenses,
   5: _v5CustomersAndReturns,
   6: _v6Users,
+  7: _v7ProductCategories,
 };
+
+/// Palette shared by product and expense category pickers (ARGB).
+const categoryPalette = [
+  0xFF5C6BC0,
+  0xFF26A69A,
+  0xFFEF6C00,
+  0xFF8D6E63,
+  0xFF29B6F6,
+  0xFF78909C,
+  0xFFEC407A,
+  0xFF9E9E9E,
+  0xFF66BB6A,
+  0xFFAB47BC,
+  0xFFFFCA28,
+  0xFFEF5350,
+];
+
+/// Name used when a product has no category.
+const defaultProductCategory = 'Other';
 
 /// Built-in expense categories (id, name, ARGB color). `cat-stock` is used
 /// when receiving stock with a cost.
@@ -375,4 +395,37 @@ Future<void> _v6Users(DatabaseExecutor db) async {
     )
   ''');
   await addColumnIfMissing(db, 'sales', 'user_id', 'TEXT');
+}
+
+// v6 -> v7: managed product categories (name, color, order, archive),
+// seeded from the free-text categories already on products.
+Future<void> _v7ProductCategories(DatabaseExecutor db) async {
+  await db.execute('''
+    CREATE TABLE IF NOT EXISTS product_categories (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+      color INTEGER NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      is_active INTEGER NOT NULL DEFAULT 1
+    )
+  ''');
+  final rows = await db.rawQuery('''
+    SELECT DISTINCT TRIM(category) AS name FROM products
+    WHERE TRIM(category) != ''
+    ORDER BY name COLLATE NOCASE
+  ''');
+  final names = [
+    for (final row in rows) row['name'] as String,
+    defaultProductCategory,
+  ];
+  var order = 0;
+  for (final name in names) {
+    final inserted = await db.insert('product_categories', {
+      'id': 'pcat-${order + 1}',
+      'name': name,
+      'color': categoryPalette[order % categoryPalette.length],
+      'sort_order': order,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    if (inserted > 0) order++;
+  }
 }

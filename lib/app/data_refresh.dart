@@ -27,6 +27,7 @@ Future<void> refreshAllData(WidgetRef ref) async {
   ref.invalidate(receiptPaperSizeProvider);
   ref.invalidate(paymentOptionsProvider);
   ref.invalidate(productViewModelProvider);
+  ref.invalidate(productCategoriesProvider);
   ref.invalidate(inventoryViewModelProvider);
   ref.invalidate(salesViewModelProvider);
   ref.invalidate(saleItemsProvider);

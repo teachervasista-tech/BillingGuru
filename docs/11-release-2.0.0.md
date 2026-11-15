@@ -5,7 +5,7 @@ Release date: 2026-11-15 · Package: `BillingGuru-2.0.0-windows-x64-2026-11-15.z
 ## Before you upgrade
 
 - **Make a copy of your data folder first.** 2.0.0 upgrades the database
-  (schema v2 → v6) the first time it starts. The upgrade keeps all products
+  (schema v2 → v7) the first time it starts. The upgrade keeps all products
   and sales, but version 1.0.0 cannot open the upgraded database afterwards.
 - After upgrading, use **Settings → Data → Create backup** regularly.
 
@@ -65,6 +65,18 @@ Release date: 2026-11-15 · Package: `BillingGuru-2.0.0-windows-x64-2026-11-15.z
   Export to CSV with the download button.
 - New report periods: *Last month* and *Financial year*.
 
+### Product categories
+
+- **Settings → Product categories** (admin): add, rename, recolor, reorder,
+  archive and delete categories — like expense categories.
+- Existing categories are created automatically from your products on upgrade.
+- Renaming updates every product in the category. Deleting asks where to move
+  its products. Archived categories aren't offered in the product form.
+- The category list on the PoS and Products screens follows your order and
+  shows each category's color.
+- Typing a new category in the product form (or importing one from Excel)
+  still works — it is added to the list automatically.
+
 ### Customers (replaces the placeholder screen)
 
 - Customer list with search, details, lifetime value, average sale and purchase
@@ -86,6 +98,7 @@ app are now changed in the app:
 
 | Tab | Settings |
 |---|---|
+| Product categories | Names, colors, order, archive, delete (moving products) |
 | Business | Receipt header (business name, address, tax ID), currency, financial-year start, invoice numbering (daily / monthly / yearly), low-stock threshold, color theme |
 | Modules | Show or hide Home, PoS, Products, Customers, Sales, Expenses, Reports, Inventory; turn the payment screen on or off |
 | Expense categories | Names, colors, monthly budgets, archive |
@@ -137,7 +150,7 @@ in **Settings → Modules**; Expenses is on.
 - Shared helpers: `MoneyInput`, `CsvExport`, `AppFileStorage`,
   `PeriodDropdown`, `SectionCard`, `openWithSystem`, `refreshAllData`.
 
-### Schema v6 (new and changed)
+### Schema v7 (new and changed)
 
 | Table / view | Purpose |
 |---|---|
@@ -146,6 +159,7 @@ in **Settings → Modules**; Expenses is on.
 | `expenses` | `amount_cents`, `tax_cents`, `payment_method`, `expense_date`, `attachment_path`, `recurring_id` |
 | `recurring_expenses` | Templates with `frequency` and `next_due_date` |
 | `customers` | Contact details |
+| `product_categories` | Managed product categories (`name` unique, case-insensitive; `color`, `sort_order`, `is_active`). Products keep the category name |
 | `users` | Accounts: `username` (unique, case-insensitive), `role` (`admin`/`seller`), `password_hash` (PBKDF2-HMAC-SHA256, salted), `is_active` |
 | `sales.user_id` | Who made the sale |
 | `sale_returns`, `sale_return_items` | Void/return audit trail |
@@ -159,7 +173,7 @@ in **Settings → Modules**; Expenses is on.
 
 `test/helpers/test_container.dart` provides `createTestDatabase()` (in-memory
 SQLite via FFI) and `createTestContainer()` (in-memory settings, optional DB
-override). 68 tests cover migrations (fresh vs. upgraded schema equality),
+override). 74 tests cover migrations (fresh vs. upgraded schema equality),
 settings, modules, expenses, recurring, P&L, returns, customers, backup,
 users/permissions and the setup → sign-in flow. Pass `user: testAdmin` /
 `testSeller` to `createTestContainer` for screens that check permissions.

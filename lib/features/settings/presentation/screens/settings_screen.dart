@@ -18,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../expenses/presentation/widgets/expense_categories_tab.dart';
 import '../../../auth/presentation/widgets/users_settings_tab.dart';
+import '../../../products/presentation/widgets/product_categories_tab.dart';
 import '../widgets/business_settings_tab.dart';
 import '../widgets/data_settings_tab.dart';
 import '../widgets/modules_settings_tab.dart';
@@ -55,6 +56,11 @@ class SettingsScreen extends ConsumerWidget {
           Icons.payments_outlined,
           _PaymentOptionsTab(),
         ),
+      const SettingsTab(
+        'Product categories',
+        Icons.label_outline,
+        ProductCategoriesTab(),
+      ),
       if (features.expensesEnabled)
         const SettingsTab(
           'Expense categories',

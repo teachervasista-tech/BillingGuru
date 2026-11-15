@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../../../../core/database/app_database.dart';
+import '../product_category_service.dart';
 import '../models/product.dart';
 import '../models/product_mapper.dart';
 
@@ -61,11 +62,13 @@ class ProductLocalService {
   Future<List<String>> getActiveCategories() async {
     final db = await database.database;
 
+    // Managed display order first; categories not (yet) managed sort last.
     final rows = await db.rawQuery('''
-    SELECT DISTINCT category
-    FROM products
-    WHERE is_active = 1
-    ORDER BY category COLLATE NOCASE ASC
+    SELECT DISTINCT p.category
+    FROM products p
+    LEFT JOIN product_categories c ON c.name = p.category COLLATE NOCASE
+    WHERE p.is_active = 1
+    ORDER BY COALESCE(c.sort_order, 1000000) ASC, p.category COLLATE NOCASE ASC
     ''');
 
     return rows
@@ -149,11 +152,16 @@ class ProductLocalService {
       }
     }
 
-    await db.insert(
-      'products',
-      ProductMapper.toMap(product),
-      conflictAlgorithm: ConflictAlgorithm.abort,
-    );
+    await db.transaction((txn) async {
+      final category = await ProductCategoryService.ensure(
+        txn,
+        product.category,
+      );
+      await txn.insert('products', {
+        ...ProductMapper.toMap(product),
+        'category': category,
+      }, conflictAlgorithm: ConflictAlgorithm.abort);
+    });
   }
 
   Future<void> updateProduct(Product product) async {
@@ -174,12 +182,18 @@ class ProductLocalService {
       }
     }
 
-    final updatedRows = await db.update(
-      'products',
-      ProductMapper.toMap(product),
-      where: 'id = ?',
-      whereArgs: [product.id],
-    );
+    final updatedRows = await db.transaction((txn) async {
+      final category = await ProductCategoryService.ensure(
+        txn,
+        product.category,
+      );
+      return txn.update(
+        'products',
+        {...ProductMapper.toMap(product), 'category': category},
+        where: 'id = ?',
+        whereArgs: [product.id],
+      );
+    });
 
     if (updatedRows == 0) {
       throw Exception('Product ${product.id} was not found.');
