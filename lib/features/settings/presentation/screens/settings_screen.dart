@@ -1,4 +1,4 @@
-import 'package:billing_guru/core/config/app_features.dart';
+import 'package:billing_guru/core/settings/app_settings_provider.dart';
 import 'package:billing_guru/core/currency/currency_provider.dart';
 import 'package:billing_guru/core/currency/currency.dart';
 import 'package:billing_guru/core/tax/tax_rate_provider.dart';
@@ -16,12 +16,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final showPayments = AppFeatures.instance.checkoutEnabled;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final showPayments = ref.watch(appFeaturesProvider).checkoutEnabled;
 
     return DefaultTabController(
       length: showPayments ? 3 : 2,

@@ -1,9 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/database/database_provider.dart';
+import '../../../../core/period/date_range.dart';
 import '../../data/models/report_models.dart';
 import '../../data/services/report_local_service.dart';
 
-enum ReportPeriodType { today, last7Days, thisMonth }
+enum ReportPeriodType {
+  today(PeriodPreset.today),
+  last7Days(PeriodPreset.last7Days),
+  thisMonth(PeriodPreset.month);
+
+  const ReportPeriodType(this.preset);
+
+  final PeriodPreset preset;
+}
 
 class ReportFilter {
   const ReportFilter({required this.type});
@@ -43,7 +53,7 @@ class ReportData {
 }
 
 final reportLocalServiceProvider = Provider<ReportLocalService>((ref) {
-  return ReportLocalService();
+  return ReportLocalService(database: ref.watch(appDatabaseProvider));
 });
 
 final reportProvider = FutureProvider.autoDispose
@@ -87,30 +97,6 @@ final reportProvider = FutureProvider.autoDispose
     });
 
 ReportPeriod _periodFromFilter(ReportFilter filter) {
-  final now = DateTime.now();
-
-  switch (filter.type) {
-    case ReportPeriodType.today:
-      final start = DateTime(now.year, now.month, now.day);
-
-      return ReportPeriod(from: start, to: start.add(const Duration(days: 1)));
-
-    case ReportPeriodType.last7Days:
-      final end = DateTime(
-        now.year,
-        now.month,
-        now.day,
-      ).add(const Duration(days: 1));
-
-      return ReportPeriod(from: end.subtract(const Duration(days: 7)), to: end);
-
-    case ReportPeriodType.thisMonth:
-      final start = DateTime(now.year, now.month);
-
-      final end = now.month == 12
-          ? DateTime(now.year + 1)
-          : DateTime(now.year, now.month + 1);
-
-      return ReportPeriod(from: start, to: end);
-  }
+  final range = filter.type.preset.rangeFor(DateTime.now())!;
+  return ReportPeriod(from: range.from, to: range.to);
 }

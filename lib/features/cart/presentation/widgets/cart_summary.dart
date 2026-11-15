@@ -7,7 +7,7 @@ import 'package:billing_guru/core/printing/receipt_printer_dialog.dart';
 import 'package:billing_guru/core/printing/receipt_template_provider.dart';
 import 'package:billing_guru/features/checkout/domain/payment.dart';
 import 'package:billing_guru/features/checkout/domain/sale.dart';
-import 'package:billing_guru/core/config/app_features.dart';
+import 'package:billing_guru/core/settings/app_settings_provider.dart';
 import 'package:billing_guru/features/checkout/presentation/view_models/checkout_view_model.dart';
 import 'package:billing_guru/core/tax/tax_rate_provider.dart';
 import 'package:flutter/material.dart';
@@ -62,7 +62,7 @@ class CartSummary extends ConsumerWidget {
     final cart = ref.watch(cartProvider);
     ref.watch(defaultTaxRateProvider);
     final cartViewModel = ref.read(cartProvider.notifier);
-    final checkoutEnabled = AppFeatures.instance.checkoutEnabled;
+    final checkoutEnabled = ref.watch(appFeaturesProvider).checkoutEnabled;
 
     return Card(
       margin: const EdgeInsets.all(16),

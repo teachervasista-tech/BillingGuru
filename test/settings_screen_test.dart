@@ -1,4 +1,3 @@
-import 'package:billing_guru/core/currency/currency_provider.dart';
 import 'package:billing_guru/core/printing/receipt_paper_size.dart';
 import 'package:billing_guru/core/printing/receipt_template.dart';
 import 'package:billing_guru/core/printing/receipt_template_provider.dart';
@@ -8,6 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'helpers/test_container.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -21,9 +23,8 @@ void main() {
 
   testWidgets('Tax & Currency tab displays the asset currency', (tester) async {
     SharedPreferences.setMockInitialValues({});
-    final container = ProviderContainer();
+    final container = await createTestContainer();
     addTearDown(container.dispose);
-    await container.read(currencyProvider.notifier).loadCurrencyFromAsset();
     await container.read(defaultTaxRateProvider.notifier).loadSavedTaxRate();
 
     await tester.pumpWidget(
@@ -41,9 +42,8 @@ void main() {
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
-    final container = ProviderContainer();
+    final container = await createTestContainer();
     addTearDown(container.dispose);
-    await container.read(currencyProvider.notifier).loadCurrencyFromAsset();
     await container.read(defaultTaxRateProvider.notifier).loadSavedTaxRate();
     await container.read(receiptTemplateProvider.notifier).loadSavedTemplate();
 

@@ -1,5 +1,3 @@
-//import 'package:sqflite/sqflite.dart';
-
 import '../../../../core/database/app_database.dart';
 import '../../../checkout/domain/sale_item.dart';
 import '../../domain/sales_period.dart';
@@ -25,9 +23,8 @@ class SalesLocalService {
     }
     // created_at is stored as a local ISO-8601 string, which sorts correctly.
     if (range != null) {
-      conditions.add('created_at >= ? AND created_at < ?');
-      arguments.add(range.from.toIso8601String());
-      arguments.add(range.to.toIso8601String());
+      conditions.add(DateRange.sqlClause('created_at'));
+      arguments.addAll(range.sqlArgs);
     }
 
     final rows = await db.query(

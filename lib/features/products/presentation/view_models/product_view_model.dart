@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/database/app_database.dart';
+import '../../../../core/database/database_provider.dart';
 import '../../data/models/product.dart';
 import '../../data/repositories/product_repository.dart';
 import '../../data/services/product_import.dart';
@@ -8,7 +8,7 @@ import '../../data/services/product_local_service.dart';
 
 final productRepositoryProvider = Provider<ProductRepository>((ref) {
   return ProductRepository(
-    localService: ProductLocalService(database: AppDatabase.instance),
+    localService: ProductLocalService(database: ref.watch(appDatabaseProvider)),
   );
 });
 

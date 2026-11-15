@@ -1,18 +1,17 @@
 import '../../../../core/database/app_database.dart';
+import '../../../../core/database/row_reader.dart';
 import '../models/report_models.dart';
 
 class ReportLocalService {
-  ReportLocalService({AppDatabase? database})
-    : _database = database ?? AppDatabase.instance;
+  ReportLocalService({required this.database});
 
-  final AppDatabase _database;
+  final AppDatabase database;
 
   Future<SalesSummary> getSalesSummary({
     required DateTime from,
     required DateTime to,
   }) async {
-    //debugPrint('[Reports] Loading sales summary');
-    final db = await _database.database;
+    final db = await database.database;
 
     final rows = await db.rawQuery(
       '''
@@ -44,15 +43,13 @@ class ReportLocalService {
       ],
     );
 
-    //debugPrint('[Reports] Sales summary loaded');
-
     final row = rows.first;
 
-    final totalSalesCents = (row['total_sales_cents'] as num?)?.toInt() ?? 0;
+    final totalSalesCents = row.intOf('total_sales_cents');
 
-    final totalTransactions = (row['total_transactions'] as num?)?.toInt() ?? 0;
+    final totalTransactions = row.intOf('total_transactions');
 
-    final totalItems = (row['total_items'] as num?)?.toInt() ?? 0;
+    final totalItems = row.intOf('total_items');
 
     return SalesSummary(
       totalSalesCents: totalSalesCents,
@@ -68,8 +65,7 @@ class ReportLocalService {
     required DateTime from,
     required DateTime to,
   }) async {
-    //debugPrint('[Reports] Loading daily sales');
-    final db = await _database.database;
+    final db = await database.database;
 
     final rows = await db.rawQuery(
       '''
@@ -85,15 +81,14 @@ class ReportLocalService {
       ''',
       [from.toIso8601String(), to.toIso8601String()],
     );
-    //debugPrint('[Reports] Daily sales loaded: ${rows.length}');
 
     return rows.map((row) {
       final dateText = row['sale_date'] as String;
 
       return DailySalesReport(
         date: DateTime.parse(dateText),
-        totalCents: (row['total_cents'] as num?)?.toInt() ?? 0,
-        transactionCount: (row['transaction_count'] as num?)?.toInt() ?? 0,
+        totalCents: row.intOf('total_cents'),
+        transactionCount: row.intOf('transaction_count'),
       );
     }).toList();
   }
@@ -102,7 +97,7 @@ class ReportLocalService {
     required DateTime from,
     required DateTime to,
   }) async {
-    final db = await _database.database;
+    final db = await database.database;
 
     final rows = await db.rawQuery(
       '''
@@ -121,9 +116,9 @@ class ReportLocalService {
 
     return rows.map((row) {
       return PaymentMethodReport(
-        paymentMethod: row['payment_method'] as String,
-        totalCents: (row['total_cents'] as num?)?.toInt() ?? 0,
-        transactionCount: (row['transaction_count'] as num?)?.toInt() ?? 0,
+        paymentMethod: row.stringOf('payment_method'),
+        totalCents: row.intOf('total_cents'),
+        transactionCount: row.intOf('transaction_count'),
       );
     }).toList();
   }
@@ -133,7 +128,7 @@ class ReportLocalService {
     required DateTime to,
     int limit = 10,
   }) async {
-    final db = await _database.database;
+    final db = await database.database;
 
     final rows = await db.rawQuery(
       '''
@@ -158,10 +153,10 @@ class ReportLocalService {
 
     return rows.map((row) {
       return TopProductReport(
-        productId: row['product_id'] as String,
-        productName: row['product_name'] as String,
-        quantity: (row['quantity'] as num?)?.toInt() ?? 0,
-        totalCents: (row['total_cents'] as num?)?.toInt() ?? 0,
+        productId: row.stringOf('product_id'),
+        productName: row.stringOf('product_name'),
+        quantity: row.intOf('quantity'),
+        totalCents: row.intOf('total_cents'),
       );
     }).toList();
   }
@@ -171,7 +166,7 @@ class ReportLocalService {
     required DateTime to,
     int limit = 10,
   }) async {
-    final db = await _database.database;
+    final db = await database.database;
 
     final rows = await db.rawQuery(
       '''
@@ -203,10 +198,10 @@ class ReportLocalService {
 
     return rows.map((row) {
       return LowStockReport(
-        productId: row['product_id'] as String,
-        shortCode: row['short_code'] as String,
-        productName: row['product_name'] as String,
-        soldQuantity: (row['sold_quantity'] as num?)?.toInt() ?? 0,
+        productId: row.stringOf('product_id'),
+        shortCode: row.stringOf('short_code'),
+        productName: row.stringOf('product_name'),
+        soldQuantity: row.intOf('sold_quantity'),
       );
     }).toList();
   }

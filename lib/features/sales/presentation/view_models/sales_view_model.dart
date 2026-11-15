@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/database/app_database.dart';
+import '../../../../core/database/database_provider.dart';
 import '../../../checkout/domain/sale_item.dart';
 import '../../domain/sales_period.dart';
 import '../../data/models/sale_summary.dart';
@@ -9,7 +9,7 @@ import '../../data/services/sales_local_service.dart';
 
 final salesRepositoryProvider = Provider<SalesRepository>((ref) {
   return SalesRepository(
-    localService: SalesLocalService(database: AppDatabase.instance),
+    localService: SalesLocalService(database: ref.watch(appDatabaseProvider)),
   );
 });
 

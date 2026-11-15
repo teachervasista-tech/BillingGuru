@@ -6,7 +6,7 @@ class DashboardRepository {
 
   final DashboardLocalService localService;
 
-  Future<DashboardSummary> getSummary() {
-    return localService.getSummary();
+  Future<DashboardSummary> getSummary({int lowStockThreshold = 10}) {
+    return localService.getSummary(lowStockThreshold: lowStockThreshold);
   }
 }

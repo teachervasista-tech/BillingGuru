@@ -325,10 +325,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _ordered(
-                    2,
-                    _buildCategoryField(categories),
-                  ),
+                  _ordered(2, _buildCategoryField(categories)),
                   const SizedBox(height: 12),
                   _ordered(
                     3,

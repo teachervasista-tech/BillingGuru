@@ -24,7 +24,13 @@ class AppColorTheme {
   );
 
   static List<AppColorTheme> options = const [fallback];
+
+  /// Default theme from the asset file; the user's choice lives in
+  /// `AppSettings.colorThemeId`.
   static AppColorTheme selected = fallback;
+
+  static AppColorTheme byId(String id) =>
+      options.firstWhere((theme) => theme.id == id, orElse: () => selected);
 
   /// Reads the themes and applies the one named by "selected" in the file;
   /// keeps the built-in blue theme on any error.

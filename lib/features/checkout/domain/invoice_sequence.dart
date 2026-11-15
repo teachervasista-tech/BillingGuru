@@ -1,13 +1,14 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-const invoiceSequenceAssetPath = 'assets/config/invoice_sequence.txt';
+import '../../../core/settings/app_settings_provider.dart';
 
 /// How often the invoice counter restarts at 1.
 enum InvoiceSequenceReset {
   daily,
   monthly,
   yearly;
+
+  String get code => name.toUpperCase();
 
   static InvoiceSequenceReset parse(String? text) {
     final value = (text ?? '').trim().toUpperCase();
@@ -35,15 +36,12 @@ enum InvoiceSequenceReset {
       '${prefixFor(date)}${sequence.toString().padLeft(4, '0')}';
 }
 
-/// Read from assets/config/invoice_sequence.txt (DAILY, MONTHLY or YEARLY).
+/// Invoice numbering reset, editable in Settings → Business
+/// (default: assets/config/invoice_sequence.txt).
 final invoiceSequenceResetProvider = FutureProvider<InvoiceSequenceReset>((
   ref,
 ) async {
-  try {
-    return InvoiceSequenceReset.parse(
-      await rootBundle.loadString(invoiceSequenceAssetPath),
-    );
-  } catch (_) {
-    return InvoiceSequenceReset.daily;
-  }
+  return InvoiceSequenceReset.parse(
+    ref.watch(appSettingsProvider).invoiceSequence,
+  );
 });

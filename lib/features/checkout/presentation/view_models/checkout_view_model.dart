@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../../core/database/app_database.dart';
+import '../../../../core/database/database_provider.dart';
 import '../../../../core/tax/tax_rate_provider.dart';
 import '../../../cart/domain/cart_item.dart';
 import '../../../cart/presentation/view_models/cart_view_model.dart';
@@ -15,7 +15,7 @@ import '../../domain/sale.dart';
 import '../../domain/sale_item.dart';
 
 final checkoutRepositoryProvider = Provider<CheckoutRepository>((ref) {
-  return CheckoutRepository(database: AppDatabase.instance);
+  return CheckoutRepository(database: ref.watch(appDatabaseProvider));
 });
 
 final checkoutViewModelProvider =
