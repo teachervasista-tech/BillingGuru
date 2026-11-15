@@ -51,7 +51,13 @@ class SettingsScreen extends ConsumerWidget {
         BusinessSettingsTab(),
         system,
       ),
-      const SettingsTab('Tax', Icons.percent, _TaxAndCurrencyTab(), system),
+      // Installer and admin.
+      const SettingsTab(
+        'Tax',
+        Icons.percent,
+        _TaxAndCurrencyTab(),
+        Permission.manageTax,
+      ),
       const SettingsTab(
         'Printer',
         Icons.receipt_long_outlined,

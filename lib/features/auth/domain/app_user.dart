@@ -5,8 +5,11 @@ enum Permission {
   /// The Settings screen itself (which tabs show depends on the others).
   openSettings,
 
-  /// Settings → Business, Tax, Printer, Payment options, Modules, Data.
+  /// Settings → Business, Printer, Payment options, Modules, Data.
   configureSystem,
+
+  /// Settings → Tax (default tax rate).
+  manageTax,
 
   /// Settings → Users: create and manage Admin / Seller accounts.
   manageUsers,
@@ -34,10 +37,12 @@ enum UserRole {
   installer('Installer', [
     Permission.openSettings,
     Permission.configureSystem,
+    Permission.manageTax,
     Permission.manageUsers,
   ]),
   admin('Admin', [
     Permission.openSettings,
+    Permission.manageTax,
     Permission.manageUsers,
     Permission.manageCategories,
     Permission.operate,

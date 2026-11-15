@@ -11,33 +11,49 @@ Release date: 2026-11-15 · Package: `BillingGuru-2.0.0-windows-x64-2026-11-15.z
 
 ## What's new
 
-### Users: Admin and Seller
+### Users: Installer, Admin and Seller
 
-- **First start:** the app asks you to create the **Admin** account (name,
-  username, password). Keep the password safe — there is no recovery; another
-  admin can reset it.
+- **First start:** sign in as **`installer`** with password **`installer`**
+  (the login screen shows this hint until it is changed). The installer must
+  choose a new password before continuing. Keep it safe — there is no recovery.
+- The installer sets the shop up (Business, Tax, Printer, receipt logo,
+  Payment options, Modules, Data) and creates the **Admin** and **Seller**
+  accounts in **Settings → Users**. The installer account cannot be disabled
+  or changed by others and is not shown in admins' user list.
 - Everyone signs in with username and password. The account button at the
   bottom of the navigation menu shows who is signed in and offers **Change
   password** and **Sign out**.
-- **Settings → Users** (admin only): add sellers or admins, reset passwords,
-  switch role, disable/enable accounts. The last active admin can't be
-  disabled or demoted.
+- Admins can also add sellers or admins, reset passwords, switch roles and
+  disable accounts. The last active admin can't be disabled or demoted.
 
-| | Admin | Seller |
-|---|:-:|:-:|
-| PoS, checkout, receipts | ✓ | ✓ |
-| Sales history, reprint | ✓ | ✓ |
-| View products and stock | ✓ | ✓ |
-| Customers | ✓ | ✓ |
-| Dashboard sales charts | ✓ | ✓ |
-| Add/edit products, adjust stock | ✓ | |
-| Void sales, return items | ✓ | |
-| Expenses | ✓ | |
-| Reports, profit & loss | ✓ | |
-| Settings and users | ✓ | |
+| | Installer | Admin | Seller |
+|---|:-:|:-:|:-:|
+| Settings → Business, Printer (incl. logo), Payment options, Modules, Data | ✓ | | |
+| Settings → Tax | ✓ | ✓ | |
+| Settings → Users | ✓ | ✓ | |
+| Settings → Product categories, Expense categories | | ✓ | |
+| PoS, checkout, receipts, sales history | | ✓ | ✓ |
+| View products and stock, customers, dashboard sales charts | | ✓ | ✓ |
+| Add/edit products, adjust stock | | ✓ | |
+| Void sales, return items | | ✓ | |
+| Expenses, reports, profit & loss | | ✓ | |
 
+- The installer goes straight to Settings; sellers have no Settings at all.
 - Each sale records who made it ("Sold by" in the sale details).
 - Restoring a backup signs everyone out, since accounts come from the backup.
+
+### Receipt logo
+
+- **Settings → Printer → Receipt logo** (installer): upload a picture and
+  choose *Default*, *Uploaded* or *No logo*.
+- Uploads are converted for receipt printers: transparency becomes white,
+  empty borders are trimmed, contrast is boosted and the image is sized to at
+  most 384 × 160 dots — the native resolution of 58 mm and 80 mm thermal
+  printers.
+- Print style: **Black & white** (sharpest, for logos and text),
+  **Dithered** (photos or shaded logos) or **Grayscale** (laser/inkjet). The
+  original is kept, so the style can be changed later without re-uploading.
+  The logo is included in backups.
 
 ### Expenses (new module)
 
@@ -96,13 +112,17 @@ Release date: 2026-11-15 · Package: `BillingGuru-2.0.0-windows-x64-2026-11-15.z
 Values that previously required editing `assets/config/*` and rebuilding the
 app are now changed in the app:
 
-| Tab | Settings |
-|---|---|
-| Product categories | Names, colors, order, archive, delete (moving products) |
-| Business | Receipt header (business name, address, tax ID), currency, financial-year start, invoice numbering (daily / monthly / yearly), low-stock threshold, color theme |
-| Modules | Show or hide Home, PoS, Products, Customers, Sales, Expenses, Reports, Inventory; turn the payment screen on or off |
-| Expense categories | Names, colors, monthly budgets, archive |
-| Data | Backup, restore, app version, database location |
+| Tab | Who | Settings |
+|---|---|---|
+| Business | Installer | Receipt header (business name, address, tax ID), currency, financial-year start, invoice numbering (daily / monthly / yearly), low-stock threshold, color theme |
+| Tax | Installer, Admin | Default tax rate |
+| Printer | Installer | Receipt layout, paper size, receipt logo |
+| Payment options | Installer | Payment buttons at checkout |
+| Modules | Installer | Show or hide Home, PoS, Products, Customers, Sales, Expenses, Reports, Inventory; turn the payment screen on or off |
+| Data | Installer | Backup, restore, app version, database location |
+| Users | Installer, Admin | Admin and Seller accounts |
+| Product categories | Admin | Names, colors, order, archive, delete (moving products) |
+| Expense categories | Admin | Names, colors, monthly budgets, archive |
 
 The files in `assets/config/` are still used as **first-run defaults**.
 
@@ -160,7 +180,7 @@ in **Settings → Modules**; Expenses is on.
 | `recurring_expenses` | Templates with `frequency` and `next_due_date` |
 | `customers` | Contact details |
 | `product_categories` | Managed product categories (`name` unique, case-insensitive; `color`, `sort_order`, `is_active`). Products keep the category name |
-| `users` | Accounts: `username` (unique, case-insensitive), `role` (`admin`/`seller`), `password_hash` (PBKDF2-HMAC-SHA256, salted), `is_active` |
+| `users` | Accounts: `username` (unique, case-insensitive), `role` (`installer`/`admin`/`seller`), `password_hash` (PBKDF2-HMAC-SHA256, salted), `is_active`, `must_change_password`. The installer row is created in v7 |
 | `sales.user_id` | Who made the sale |
 | `sale_returns`, `sale_return_items` | Void/return audit trail |
 | `products.cost_price_cents` | Current (average) cost |
@@ -173,7 +193,8 @@ in **Settings → Modules**; Expenses is on.
 
 `test/helpers/test_container.dart` provides `createTestDatabase()` (in-memory
 SQLite via FFI) and `createTestContainer()` (in-memory settings, optional DB
-override). 74 tests cover migrations (fresh vs. upgraded schema equality),
+override). 82 tests cover migrations (fresh vs. upgraded schema equality),
 settings, modules, expenses, recurring, P&L, returns, customers, backup,
-users/permissions and the setup → sign-in flow. Pass `user: testAdmin` /
+users/permissions, receipt logo conversion and the installer → admin →
+seller sign-in flow. Pass `user: testAdmin` /
 `testSeller` to `createTestContainer` for screens that check permissions.

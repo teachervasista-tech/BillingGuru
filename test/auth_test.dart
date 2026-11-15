@@ -261,6 +261,8 @@ void main() {
       expect(testInstaller.can(Permission.manageUsers), isTrue);
       expect(testInstaller.can(Permission.manageCategories), isFalse);
       expect(testAdmin.can(Permission.configureSystem), isFalse);
+      expect(testAdmin.can(Permission.manageTax), isTrue);
+      expect(testInstaller.can(Permission.manageTax), isTrue);
       expect(testAdmin.can(Permission.manageUsers), isTrue);
       expect(testAdmin.can(Permission.manageCategories), isTrue);
       expect(testSeller.can(Permission.openSettings), isFalse);
@@ -348,6 +350,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(tab('Users'), findsOneWidget);
+    expect(tab('Tax'), findsOneWidget);
     expect(tab('Product categories'), findsOneWidget);
     expect(tab('Business'), findsNothing);
     expect(tab('Data'), findsNothing);
