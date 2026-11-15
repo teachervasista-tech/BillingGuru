@@ -17,6 +17,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../expenses/presentation/widgets/expense_categories_tab.dart';
+import '../../../auth/presentation/widgets/users_settings_tab.dart';
 import '../widgets/business_settings_tab.dart';
 import '../widgets/data_settings_tab.dart';
 import '../widgets/modules_settings_tab.dart';
@@ -60,6 +61,7 @@ class SettingsScreen extends ConsumerWidget {
           Icons.category_outlined,
           ExpenseCategoriesTab(),
         ),
+      const SettingsTab('Users', Icons.group_outlined, UsersSettingsTab()),
       const SettingsTab('Modules', Icons.apps_outlined, ModulesSettingsTab()),
       const SettingsTab('Data', Icons.storage_outlined, DataSettingsTab()),
     ];

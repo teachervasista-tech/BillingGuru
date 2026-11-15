@@ -13,6 +13,7 @@ final Map<int, Migration> appMigrations = {
   3: _v3StockMovementsAndSettings,
   4: _v4Expenses,
   5: _v5CustomersAndReturns,
+  6: _v6Users,
 };
 
 /// Built-in expense categories (id, name, ARGB color). `cat-stock` is used
@@ -357,4 +358,21 @@ Future<void> _v5CustomersAndReturns(DatabaseExecutor db) async {
     INNER JOIN sales s ON s.id = si.sale_id
     WHERE s.status != 'voided'
   ''');
+}
+
+// v5 -> v6: user accounts (admin / seller) and who made each sale.
+Future<void> _v6Users(DatabaseExecutor db) async {
+  await db.execute('''
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      username TEXT NOT NULL COLLATE NOCASE UNIQUE,
+      display_name TEXT NOT NULL,
+      role TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL,
+      last_login_at TEXT
+    )
+  ''');
+  await addColumnIfMissing(db, 'sales', 'user_id', 'TEXT');
 }

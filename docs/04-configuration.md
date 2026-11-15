@@ -4,7 +4,15 @@ Complete guide to configuring BillingGuru for your specific needs.
 
 ## Configuration Files
 
+> **Since 2.0.0** these files are **first-run defaults** only. Business details,
+> currency, invoice numbering, financial year, low-stock threshold, color theme
+> and module switches are edited in **Settings** (Business / Modules tabs) and
+> stored in the database, so no rebuild is needed. See
+> [Release 2.0.0](./11-release-2.0.0.md#settings-without-rebuilding).
+
 Configuration files are stored in the `assets/config/` directory and loaded at application startup.
+
+`features.json` also accepts `"expensesEnabled"` (2.0.0).
 
 ### 1. Feature Flags (features.json)
 

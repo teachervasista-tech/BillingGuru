@@ -14,6 +14,7 @@ Welcome to BillingGuru documentation! This is a comprehensive Point of Sale (POS
 - **[Troubleshooting](./08-troubleshooting.md)** - Common issues and solutions
 - **[Development Guide](./09-development-guide.md)** - Guide for developers
 - **[Deployment](./10-deployment.md)** - Build and deployment instructions
+- **[Release 2.0.0](./11-release-2.0.0.md)** - Expenses, profit & loss, customers, returns, in-app settings, backup (start here for 2.0.0)
 
 ## Overview
 
@@ -29,6 +30,9 @@ BillingGuru is a powerful, feature-rich Point of Sale application designed for s
 - **Multiple Payment Methods** - Support for various payment types
 - **Sales History** - Complete transaction history with reprint functionality
 - **Dashboard** - Real-time business metrics and insights
+- **Expenses & Profit** - Expense tracking, budgets, recurring bills, cost of goods and profit & loss (2.0.0)
+- **Customers & Returns** - Customer history, sale voids and item returns (2.0.0)
+- **Backup & Restore** - One-file backup of all data and attachments (2.0.0)
 
 ### System Requirements
 

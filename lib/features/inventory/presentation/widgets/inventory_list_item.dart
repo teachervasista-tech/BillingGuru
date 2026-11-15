@@ -1,6 +1,7 @@
 import 'package:billing_guru/core/currency/currency_formatter.dart';
 import 'package:billing_guru/core/currency/currency_provider.dart';
 import 'package:billing_guru/core/settings/app_settings_provider.dart';
+import 'package:billing_guru/features/auth/presentation/auth_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -62,13 +63,14 @@ class InventoryListItem extends ConsumerWidget {
                   ),
                 ],
               ),
-              IconButton(
-                tooltip: 'Adjust stock',
-                icon: const Icon(Icons.tune),
-                onPressed: () {
-                  _adjustStock(context, ref);
-                },
-              ),
+              if (ref.watch(canProvider(Permission.manageProducts)))
+                IconButton(
+                  tooltip: 'Adjust stock',
+                  icon: const Icon(Icons.tune),
+                  onPressed: () {
+                    _adjustStock(context, ref);
+                  },
+                ),
             ],
           ),
         ),

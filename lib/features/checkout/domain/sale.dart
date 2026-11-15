@@ -15,6 +15,7 @@ class Sale {
     required this.syncStatus,
     this.customerId,
     this.customerName,
+    this.userId,
   });
 
   final String id;
@@ -31,4 +32,7 @@ class Sale {
 
   /// Printed on the receipt when set.
   final String? customerName;
+
+  /// Signed-in user who made the sale.
+  final String? userId;
 }

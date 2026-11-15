@@ -2,6 +2,14 @@
 
 Complete documentation of the database structure and relationships.
 
+> **2.0.0:** the authoritative schema is defined in
+> `lib/core/database/migrations.dart` (current version 6). The tables added in
+> 2.0.0 (expenses, customers, returns, settings) and the `effective_sales` /
+> `effective_sale_items` reporting views are summarised in
+> [Release 2.0.0](./11-release-2.0.0.md#schema-v5-new-and-changed). The actual
+> file is `pos_billing.db` in the sqflite databases folder (shown in
+> Settings → Data).
+
 ## Database Overview
 
 BillingGuru uses SQLite for local data persistence with automatic schema initialization and migration support.

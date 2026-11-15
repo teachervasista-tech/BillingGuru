@@ -45,6 +45,7 @@ class SaleSummary {
     this.refundedCents = 0,
     this.customerId,
     this.customerName,
+    this.sellerName,
   });
 
   final String id;
@@ -60,6 +61,9 @@ class SaleSummary {
   final int refundedCents;
   final String? customerId;
   final String? customerName;
+
+  /// Display name of the user who made the sale.
+  final String? sellerName;
 
   /// Amount actually kept after refunds.
   int get netTotalCents => totalCents - refundedCents;

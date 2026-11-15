@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_features.dart';
 import '../../core/settings/app_settings_provider.dart';
+import '../../features/auth/presentation/auth_providers.dart';
 import '../modules.dart';
 import '../navigation/app_navigation_shell.dart';
 
@@ -10,13 +11,18 @@ import '../navigation/app_navigation_shell.dart';
 String? featureRouteRedirect(String location, [AppFeatures? features]) =>
     moduleRouteRedirect(location, features ?? AppFeatures.instance);
 
-/// Created once; reads the *current* feature switches on every navigation so
-/// toggling a module in Settings takes effect without recreating the router.
+/// Recreated for each signed-in user (so every session starts on the home
+/// route); reads the *current* feature switches on every navigation so
+/// toggling a module in Settings takes effect immediately.
 final appRouterProvider = Provider<GoRouter>((ref) {
+  ref.watch(currentUserProvider.select((user) => user?.id));
   return GoRouter(
     initialLocation: initialRoute(ref.read(appFeaturesProvider)),
-    redirect: (context, state) =>
-        moduleRouteRedirect(state.uri.path, ref.read(appFeaturesProvider)),
+    redirect: (context, state) => moduleRouteRedirect(
+      state.uri.path,
+      ref.read(appFeaturesProvider),
+      ref.read(currentUserProvider),
+    ),
     routes: [
       ShellRoute(
         builder: (context, state, child) => AppNavigationShell(child: child),

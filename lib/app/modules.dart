@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/config/app_features.dart';
+import '../features/auth/domain/app_user.dart';
 import '../features/cart/presentation/screens/pos_screen.dart';
 import '../features/checkout/presentation/screens/checkout_screen.dart';
 import '../features/customers/presentation/screens/customers_screen.dart';
@@ -25,6 +26,7 @@ class AppModule {
     required this.selectedIcon,
     required this.builder,
     this.featureKey,
+    this.permission,
     this.subRoutes = const [],
     this.showInNavigation = true,
   });
@@ -39,6 +41,9 @@ class AppModule {
   /// [AppFeatures] key that switches the module on/off; null = always on.
   final String? featureKey;
 
+  /// Required [Permission]; null = every signed-in user.
+  final Permission? permission;
+
   /// Extra routes owned by this module (guarded by the same feature key and
   /// highlighting the same navigation item).
   final List<GoRoute> subRoutes;
@@ -46,6 +51,13 @@ class AppModule {
 
   bool isEnabled(AppFeatures features) =>
       featureKey == null || features.isEnabled(featureKey!);
+
+  bool isAllowed(AppUser? user) =>
+      permission == null || (user?.can(permission!) ?? false);
+
+  /// Switched on and permitted for [user].
+  bool isAvailable(AppFeatures features, AppUser? user) =>
+      isEnabled(features) && isAllowed(user);
 
   Iterable<String> get paths => [route, ...subRoutes.map((r) => r.path)];
 
@@ -128,6 +140,7 @@ final List<AppModule> appModules = [
     label: 'Expenses',
     route: '/expenses',
     featureKey: AppFeatures.expenses,
+    permission: Permission.manageExpenses,
     icon: const Icon(Icons.account_balance_wallet_outlined),
     selectedIcon: const Icon(Icons.account_balance_wallet),
     builder: (_, _) => const ExpensesScreen(),
@@ -137,6 +150,7 @@ final List<AppModule> appModules = [
     label: 'Reports',
     route: '/reports',
     featureKey: AppFeatures.reports,
+    permission: Permission.viewReports,
     icon: const Icon(Icons.analytics_outlined),
     selectedIcon: const Icon(Icons.analytics),
     builder: (_, _) => const ReportsScreen(),
@@ -155,6 +169,7 @@ final List<AppModule> appModules = [
     label: 'Settings',
     route: '/settings',
     featureKey: AppFeatures.settings,
+    permission: Permission.manageSettings,
     icon: const Icon(Icons.settings_outlined),
     selectedIcon: const Icon(Icons.settings),
     builder: (_, _) => const SettingsScreen(),
@@ -163,11 +178,16 @@ final List<AppModule> appModules = [
 
 const fallbackRoute = '/dashboard';
 
-/// Redirects disabled modules (and their sub-routes) to the dashboard.
-String? moduleRouteRedirect(String location, AppFeatures features) {
+/// Redirects disabled or forbidden modules (and their sub-routes) to the
+/// dashboard. Without a [user], permission-restricted modules are refused.
+String? moduleRouteRedirect(
+  String location,
+  AppFeatures features, [
+  AppUser? user,
+]) {
   for (final module in appModules) {
     if (module.matches(location)) {
-      return module.isEnabled(features) ? null : fallbackRoute;
+      return module.isAvailable(features, user) ? null : fallbackRoute;
     }
   }
   return null;

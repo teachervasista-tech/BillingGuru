@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/widgets/copyright_banner.dart';
 import '../../../../app/widgets/period_dropdown.dart';
+import '../../../auth/presentation/auth_providers.dart';
 import '../../../checkout/domain/sale_item.dart';
 import '../widgets/return_items_dialog.dart';
 import '../../data/models/sale_summary.dart';
@@ -356,6 +357,7 @@ class SaleDetailsDialog extends ConsumerWidget {
               Text('Payment: ${sale.paymentMethod}'),
               if (sale.customerName != null)
                 Text('Customer: ${sale.customerName}'),
+              if (sale.sellerName != null) Text('Sold by: ${sale.sellerName}'),
               if (sale.status != SaleStatus.completed)
                 Text('Status: ${sale.status.label}'),
             ],
@@ -363,7 +365,9 @@ class SaleDetailsDialog extends ConsumerWidget {
         ),
       ),
       actions: [
-        if (sale.status.isOpen && itemsAsync.hasValue) ...[
+        if (sale.status.isOpen &&
+            itemsAsync.hasValue &&
+            ref.watch(canProvider(Permission.voidSales))) ...[
           TextButton.icon(
             key: const Key('voidSaleButton'),
             onPressed: () => _void(context, ref),

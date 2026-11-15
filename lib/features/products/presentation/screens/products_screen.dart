@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/widgets/copyright_banner.dart';
+import '../../../auth/presentation/auth_providers.dart';
 import '../view_models/product_view_model.dart';
 import '../widgets/inactive_product_list_item.dart';
 import '../widgets/product_category_pane.dart';
@@ -114,13 +115,14 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
             ],
           ),
         ),
-        FilledButton.icon(
-          onPressed: () {
-            _showAddProductDialog(context);
-          },
-          icon: const Icon(Icons.add),
-          label: const Text('Add product'),
-        ),
+        if (ref.watch(canProvider(Permission.manageProducts)))
+          FilledButton.icon(
+            onPressed: () {
+              _showAddProductDialog(context);
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('Add product'),
+          ),
       ],
     );
   }
@@ -234,7 +236,9 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                           return ProductListItem(
                             product: product,
                             showAddToCart: false,
-                            showManagementActions: true,
+                            showManagementActions: ref.watch(
+                              canProvider(Permission.manageProducts),
+                            ),
                           );
                         },
                       ),

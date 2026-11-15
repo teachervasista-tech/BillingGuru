@@ -5,6 +5,7 @@ import '../../../../core/database/database_provider.dart';
 import '../../../../core/tax/tax_rate_provider.dart';
 import '../../../cart/domain/cart_item.dart';
 import '../../../cart/presentation/view_models/cart_view_model.dart';
+import '../../../auth/presentation/auth_providers.dart';
 import '../../../customers/presentation/customer_providers.dart';
 import '../../../sales/presentation/view_models/sales_view_model.dart';
 import '../../../dashboard/presentation/view_models/dashboard_view_model.dart';
@@ -188,6 +189,7 @@ class CheckoutViewModel extends Notifier<CheckoutState> {
       syncStatus: 'pending',
       customerId: customer?.id,
       customerName: customer?.name,
+      userId: ref.read(currentUserProvider)?.id,
     );
   }
 

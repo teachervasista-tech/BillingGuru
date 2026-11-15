@@ -14,9 +14,10 @@ class SalesLocalService {
   static const _uuid = Uuid();
 
   static const _selectSales = '''
-    SELECT s.*, c.name AS customer_name
+    SELECT s.*, c.name AS customer_name, u.display_name AS seller_name
     FROM sales s
     LEFT JOIN customers c ON c.id = s.customer_id
+    LEFT JOIN users u ON u.id = s.user_id
   ''';
 
   Future<List<SaleSummary>> getSales({
@@ -295,6 +296,7 @@ class SalesLocalService {
       refundedCents: map.intOf('refunded_cents'),
       customerId: map.stringOrNull('customer_id'),
       customerName: map.stringOrNull('customer_name'),
+      sellerName: map.stringOrNull('seller_name'),
     );
   }
 }

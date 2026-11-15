@@ -4,6 +4,7 @@ import '../core/printing/receipt_paper_size.dart';
 import '../core/printing/receipt_template_provider.dart';
 import '../core/settings/app_settings_provider.dart';
 import '../core/tax/tax_rate_provider.dart';
+import '../features/auth/presentation/auth_providers.dart';
 import '../features/checkout/presentation/providers/payment_options_provider.dart';
 import '../features/customers/presentation/customer_providers.dart';
 import '../features/dashboard/presentation/view_models/dashboard_view_model.dart';
@@ -37,4 +38,6 @@ Future<void> refreshAllData(WidgetRef ref) async {
   ref.invalidate(customersProvider);
   ref.invalidate(customerStatsProvider);
   ref.invalidate(customerSalesProvider);
+  // Accounts come from the restored database: sign in again.
+  await ref.read(authProvider.notifier).reset();
 }

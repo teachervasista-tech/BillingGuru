@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/settings/app_settings_provider.dart';
+import '../../../auth/presentation/auth_providers.dart';
 import '../../../expenses/presentation/widgets/category_spend_card.dart';
 import '../providers/report_providers.dart';
 import 'profit_loss_card.dart';
@@ -37,7 +38,9 @@ class _ReportsDashboardSectionState
   @override
   Widget build(BuildContext context) {
     final selectedCurrency = ref.watch(currencyProvider);
-    final expensesEnabled = ref.watch(appFeaturesProvider).expensesEnabled;
+    final canSeeProfit = ref.watch(canProvider(Permission.viewReports));
+    final expensesEnabled =
+        ref.watch(appFeaturesProvider).expensesEnabled && canSeeProfit;
 
     final filter = ReportFilter(type: _periodType);
 
@@ -91,12 +94,13 @@ class _ReportsDashboardSectionState
               const SizedBox(height: 24),
             ],
 
-            ProfitLossCard(
-              profitLoss: report.profitLoss,
-              currency: selectedCurrency,
-              periodLabel: _periodType.label,
-              expenseSpend: report.expenseSpend,
-            ),
+            if (canSeeProfit)
+              ProfitLossCard(
+                profitLoss: report.profitLoss,
+                currency: selectedCurrency,
+                periodLabel: _periodType.label,
+                expenseSpend: report.expenseSpend,
+              ),
             if (expensesEnabled) ...[
               const SizedBox(height: 24),
               CategorySpendCard(
