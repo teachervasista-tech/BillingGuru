@@ -249,7 +249,13 @@ Customize receipt header and footer.
 **Database Location**:
 - **Android**: `/data/data/com.yourapp.billing_guru/databases/billing_guru.db`
 - **iOS**: `Documents/billing_guru.db`
-- **Windows**: `AppData/Local/billing_guru/billing_guru.db`
+- **Windows**: `%APPDATA%\Vasista Technologies\BillingApp\database\pos_billing.db`
+  (before 2.1.0 it was `.dart_tool\sqflite_common_ffi\databases\` under the
+  folder the app was started from; it is copied over automatically on first
+  start, and the old file is left in place)
+- **Automatic backups (Windows)**: one `billing-guru-auto-YYYY-MM-DD.zip` per
+  day, made on startup and on close, last 30 kept. Saved to the folder chosen
+  in Settings → Data, or `%APPDATA%\Vasista Technologies\BillingApp\backups`
 - **Web**: IndexedDB (browser storage)
 
 **Database Features**:

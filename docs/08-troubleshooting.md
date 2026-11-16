@@ -54,7 +54,9 @@ Solutions for common issues and problems.
 **Solution**:
 1. Ensure database directory exists:
    - Check app data directory permissions
-   - Windows: `%APPDATA%/billing_guru/`
+   - Windows: `%APPDATA%\Vasista Technologies\BillingApp\database\`
+     (automatic backups: `...\BillingApp\backups\` or the folder chosen in
+     Settings → Data; restore one with Settings → Data → Restore)
    - macOS: `~/Library/Application Support/billing_guru/`
 
 2. Reset database:

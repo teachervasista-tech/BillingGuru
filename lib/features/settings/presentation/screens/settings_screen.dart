@@ -77,11 +77,12 @@ class SettingsScreen extends ConsumerWidget {
         ModulesSettingsTab(),
         system,
       ),
+      // Installer and admin (restore and backup folder: installer only).
       const SettingsTab(
         'Data',
         Icons.storage_outlined,
         DataSettingsTab(),
-        system,
+        Permission.backupData,
       ),
       // Installer and admin: accounts.
       const SettingsTab(

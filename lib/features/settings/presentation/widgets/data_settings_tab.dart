@@ -7,19 +7,22 @@ import 'package:intl/intl.dart';
 
 import '../../../../app/data_refresh.dart';
 import '../../../../app/widgets/section_card.dart';
-import '../../../../core/backup/backup_service.dart';
+import '../../../../core/backup/backup_providers.dart';
 import '../../../../core/config/app_info.dart';
 import '../../../../core/database/database_provider.dart';
+import '../../../auth/presentation/auth_providers.dart';
 
-final backupServiceProvider = Provider<BackupService>((ref) {
-  return BackupService(database: ref.watch(appDatabaseProvider));
-});
+export '../../../../core/backup/backup_providers.dart';
 
 final databaseLocationProvider = FutureProvider<String>((ref) {
   return ref.watch(appDatabaseProvider).databasePath;
 });
 
-/// Settings → Data: backup and restore.
+final _defaultBackupFolderProvider = FutureProvider<String>((ref) async {
+  return (await ref.watch(autoBackupServiceProvider).defaultFolder()).path;
+});
+
+/// Settings → Data: automatic backups, manual backup and restore.
 class DataSettingsTab extends ConsumerStatefulWidget {
   const DataSettingsTab({super.key});
 
@@ -46,7 +49,29 @@ class _DataSettingsTabState extends ConsumerState<DataSettingsTab> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
-  Future<void> _backup() => _run(() async {
+  Future<void> _backupNow() => _run(() async {
+    final status = await ref.read(autoBackupServiceProvider).run();
+    ref.invalidate(autoBackupStatusProvider);
+    _message(
+      status.lastError ??
+          'Backup saved to ${status.lastPath ?? 'backup folder'}',
+    );
+  });
+
+  Future<void> _chooseFolder() => _run(() async {
+    final folder = await getDirectoryPath(confirmButtonText: 'Use this folder');
+    if (folder == null) return;
+    await ref.read(autoBackupServiceProvider).setFolder(folder);
+    ref.invalidate(autoBackupStatusProvider);
+    _message('Backups will be saved to $folder');
+  });
+
+  Future<void> _useLocalFolder() => _run(() async {
+    await ref.read(autoBackupServiceProvider).setFolder(null);
+    ref.invalidate(autoBackupStatusProvider);
+  });
+
+  Future<void> _saveCopyAs() => _run(() async {
     final stamp = DateFormat('yyyyMMdd-HHmm').format(DateTime.now());
     final location = await getSaveLocation(
       suggestedName: 'billing-guru-backup-$stamp.zip',
@@ -106,40 +131,123 @@ class _DataSettingsTabState extends ConsumerState<DataSettingsTab> {
   @override
   Widget build(BuildContext context) {
     final location = ref.watch(databaseLocationProvider).value;
+    final status = ref.watch(autoBackupStatusProvider).value;
+    final defaultFolder = ref.watch(_defaultBackupFolderProvider).value;
+    final canConfigure =
+        ref.watch(currentUserProvider)?.can(Permission.configureSystem) ??
+        false;
+    final textTheme = Theme.of(context).textTheme;
+    final folder = status?.folder ?? defaultFolder;
+    final lastAt = status?.lastAt;
 
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
         SectionCard(
-          title: 'Backup',
+          title: 'Automatic backup',
           description:
-              'Saves products, sales, expenses, customers, settings, product '
-              'images and expense receipts into one .zip file. Keep a copy on '
-              'a USB drive or cloud folder.',
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: FilledButton.icon(
-              onPressed: _busy ? null : _backup,
-              icon: const Icon(Icons.backup_outlined),
-              label: const Text('Create backup'),
-            ),
+              'A backup of all data (products, sales, expenses, customers, '
+              'settings, images and receipts) is made every day when the app '
+              'starts and again when it is closed. The last 30 days are kept. '
+              'Choose a folder on a USB drive, network drive or a cloud-synced '
+              'folder (OneDrive, Google Drive) so the data survives if this '
+              'computer fails.',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Backup folder', style: textTheme.labelLarge),
+              const SizedBox(height: 4),
+              SelectableText(folder ?? '…', key: const Key('backupFolder')),
+              if (status?.folder == null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'This folder is on this computer. Choose a USB, network or '
+                  'cloud folder for protection against computer failure.',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              Text('Last backup', style: textTheme.labelLarge),
+              const SizedBox(height: 4),
+              Text(
+                lastAt == null
+                    ? 'No backup yet'
+                    : DateFormat.yMMMd().add_Hm().format(lastAt),
+                key: const Key('lastBackup'),
+              ),
+              if (status?.lastPath case final String path)
+                SelectableText(path, style: textTheme.bodySmall),
+              if (status?.lastError case final String error) ...[
+                const SizedBox(height: 8),
+                Text(
+                  error,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  FilledButton.icon(
+                    key: const Key('backupNow'),
+                    onPressed: _busy ? null : _backupNow,
+                    icon: const Icon(Icons.backup_outlined),
+                    label: const Text('Back up now'),
+                  ),
+                  if (canConfigure) ...[
+                    OutlinedButton.icon(
+                      onPressed: _busy ? null : _chooseFolder,
+                      icon: const Icon(Icons.folder_open_outlined),
+                      label: const Text('Choose backup folder'),
+                    ),
+                    if (status?.folder != null)
+                      TextButton(
+                        onPressed: _busy ? null : _useLocalFolder,
+                        child: const Text('Use this computer'),
+                      ),
+                  ],
+                ],
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 16),
         SectionCard(
-          title: 'Restore',
+          title: 'Save a copy',
           description:
-              'Replaces all current data with a backup. Use this to move to a '
-              'new computer or recover from a problem.',
+              'Saves a backup .zip file wherever you choose, e.g. to move the '
+              'data to a new computer.',
           child: Align(
             alignment: Alignment.centerLeft,
             child: OutlinedButton.icon(
-              onPressed: _busy ? null : _restore,
-              icon: const Icon(Icons.restore),
-              label: const Text('Restore from backup'),
+              onPressed: _busy ? null : _saveCopyAs,
+              icon: const Icon(Icons.save_alt),
+              label: const Text('Save backup as…'),
             ),
           ),
         ),
+        if (canConfigure) ...[
+          const SizedBox(height: 16),
+          SectionCard(
+            title: 'Restore',
+            description:
+                'Replaces all current data with a backup. Use this to move to '
+                'a new computer or recover from a problem.',
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: _busy ? null : _restore,
+                icon: const Icon(Icons.restore),
+                label: const Text('Restore from backup'),
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 16),
         SectionCard(
           title: 'About',
@@ -151,7 +259,7 @@ class _DataSettingsTabState extends ConsumerState<DataSettingsTab> {
                 const SizedBox(height: 4),
                 SelectableText(
                   'Database: $location',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: textTheme.bodySmall,
                 ),
               ],
             ],

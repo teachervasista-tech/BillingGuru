@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app.dart';
+import 'app/auto_backup_on_exit.dart';
 import 'app/theme.dart';
+import 'core/backup/backup_providers.dart';
 import 'core/config/app_features.dart';
 import 'core/database/app_database.dart';
 import 'core/database/database_initializer.dart';
@@ -28,7 +32,13 @@ Future<void> main() async {
     container.read(defaultTaxRateProvider.notifier).loadSavedTaxRate(),
   ]);
 
+  // Daily backup in the background; never delays startup.
+  unawaited(container.read(autoBackupServiceProvider).runIfDue());
+
   runApp(
-    UncontrolledProviderScope(container: container, child: const BillingGuru()),
+    UncontrolledProviderScope(
+      container: container,
+      child: const AutoBackupOnExit(child: BillingGuru()),
+    ),
   );
 }
