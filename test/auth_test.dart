@@ -261,6 +261,9 @@ void main() {
       expect(testInstaller.can(Permission.manageUsers), isTrue);
       expect(testInstaller.can(Permission.manageCategories), isFalse);
       expect(testAdmin.can(Permission.configureSystem), isFalse);
+      expect(testInstaller.can(Permission.backupData), isTrue);
+      expect(testAdmin.can(Permission.backupData), isTrue);
+      expect(testSeller.can(Permission.backupData), isFalse);
       expect(testAdmin.can(Permission.manageTax), isTrue);
       expect(testInstaller.can(Permission.manageTax), isTrue);
       expect(testAdmin.can(Permission.manageUsers), isTrue);
@@ -353,7 +356,13 @@ void main() {
     expect(tab('Tax'), findsOneWidget);
     expect(tab('Product categories'), findsOneWidget);
     expect(tab('Business'), findsNothing);
-    expect(tab('Data'), findsNothing);
+    // Admin can back up, but not restore or move the backup folder.
+    expect(tab('Data'), findsOneWidget);
+    await tester.tap(tab('Data'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('backupNow')), findsOneWidget);
+    expect(find.text('Restore from backup'), findsNothing);
+    expect(find.text('Choose backup folder'), findsNothing);
 
     // Seller: no Settings at all.
     container.read(authProvider.notifier).logout();

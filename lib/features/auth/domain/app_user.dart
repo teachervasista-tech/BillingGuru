@@ -5,8 +5,12 @@ enum Permission {
   /// The Settings screen itself (which tabs show depends on the others).
   openSettings,
 
-  /// Settings → Business, Printer, Payment options, Modules, Data.
+  /// Settings → Business, Printer, Payment options, Modules; on the Data tab,
+  /// restore and choosing the backup folder.
   configureSystem,
+
+  /// Settings → Data: see backup status and run a backup now.
+  backupData,
 
   /// Settings → Tax (default tax rate).
   manageTax,
@@ -37,11 +41,13 @@ enum UserRole {
   installer('Installer', [
     Permission.openSettings,
     Permission.configureSystem,
+    Permission.backupData,
     Permission.manageTax,
     Permission.manageUsers,
   ]),
   admin('Admin', [
     Permission.openSettings,
+    Permission.backupData,
     Permission.manageTax,
     Permission.manageUsers,
     Permission.manageCategories,
