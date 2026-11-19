@@ -21,11 +21,22 @@ void main() {
       expect(moduleRouteRedirect('/checkout', features, testAdmin), '/home');
     });
 
-    test('dashboard can never be disabled', () {
+    test('dashboard is on by default and can be switched off', () {
       expect(
         moduleRouteRedirect('/dashboard', const AppFeatures(), testSeller),
         isNull,
       );
+      const off = AppFeatures({AppFeatures.dashboard: false});
+      expect(moduleRouteRedirect('/dashboard', off, testSeller), '/home');
+    });
+
+    test('with home and dashboard off, users land on the next module', () {
+      const features = AppFeatures({
+        AppFeatures.home: false,
+        AppFeatures.dashboard: false,
+      });
+      expect(landingRoute(features, testSeller), '/pos');
+      expect(moduleRouteRedirect('/dashboard', features, testSeller), '/pos');
     });
   });
 

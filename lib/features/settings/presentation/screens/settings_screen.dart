@@ -12,6 +12,7 @@ import 'package:billing_guru/features/checkout/domain/payment_option.dart';
 import 'package:billing_guru/features/checkout/domain/sale.dart';
 import 'package:billing_guru/features/checkout/domain/sale_item.dart';
 import 'package:billing_guru/features/checkout/presentation/providers/payment_options_provider.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -35,11 +36,58 @@ class SettingsTab {
   final Permission permission;
 }
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen>
+    with TickerProviderStateMixin {
+  TabController? _controller;
+  List<String> _labels = const [];
+
+  /// Remembered by label so the same tab stays selected when another tab
+  /// appears or disappears (e.g. toggling the Payment screen in Modules).
+  String? _selectedLabel;
+
+  void _onTabChanged() {
+    final controller = _controller;
+    if (controller == null || controller.index >= _labels.length) return;
+    _selectedLabel = _labels[controller.index];
+  }
+
+  TabController _controllerFor(List<SettingsTab> tabs) {
+    final labels = [for (final tab in tabs) tab.label];
+    final existing = _controller;
+    if (existing != null && listEquals(labels, _labels)) return existing;
+
+    final selected = labels.indexOf(_selectedLabel ?? '');
+    existing?.removeListener(_onTabChanged);
+    // Dispose after this frame: the old TabBar may still reference it.
+    if (existing != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => existing.dispose());
+    }
+    _labels = labels;
+    final controller = TabController(
+      length: labels.length,
+      initialIndex: selected < 0 ? 0 : selected,
+      vsync: this,
+    )..addListener(_onTabChanged);
+    _selectedLabel = labels[controller.index];
+    return _controller = controller;
+  }
+
+  @override
+  void dispose() {
+    _controller?.removeListener(_onTabChanged);
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final features = ref.watch(appFeaturesProvider);
     final user = ref.watch(currentUserProvider);
     const system = Permission.configureSystem;
@@ -117,39 +165,39 @@ class SettingsScreen extends ConsumerWidget {
       );
     }
 
-    return DefaultTabController(
-      key: ValueKey(tabs.map((t) => t.label).join()),
-      length: tabs.length,
-      child: Scaffold(
-        appBar: AppBar(title: const Text('Settings')),
-        body: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: Theme.of(context).dividerColor),
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-                child: TabBar(
-                  isScrollable: true,
-                  tabAlignment: TabAlignment.start,
-                  tabs: [
-                    for (final tab in tabs)
-                      Tab(icon: Icon(tab.icon), text: tab.label),
-                  ],
-                ),
+    final controller = _controllerFor(tabs);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Settings')),
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: Theme.of(context).dividerColor),
               ),
             ),
-            Expanded(
-              child: TabBarView(
-                children: [for (final tab in tabs) tab.content],
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+              child: TabBar(
+                controller: controller,
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                tabs: [
+                  for (final tab in tabs)
+                    Tab(icon: Icon(tab.icon), text: tab.label),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: controller,
+              children: [for (final tab in tabs) tab.content],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -254,8 +302,6 @@ class _PaymentOptionsTab extends ConsumerWidget {
     }
 
     if (!context.mounted) return;
-    // Stay on (or return to) the Payment options tab so the saved option is visible.
-    DefaultTabController.maybeOf(context)?.animateTo(2);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Payment option "${name.trim()}" saved')),
     );

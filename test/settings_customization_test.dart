@@ -120,5 +120,18 @@ void main() {
       find.descendant(of: rail, matching: find.text('Sales')),
       findsNothing,
     );
+
+    expect(
+      find.descendant(of: rail, matching: find.text('Dashboard')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('module-dashboard')));
+    await tester.pumpAndSettle();
+
+    expect(container.read(appFeaturesProvider).dashboardEnabled, isFalse);
+    expect(
+      find.descendant(of: rail, matching: find.text('Dashboard')),
+      findsNothing,
+    );
   });
 }
