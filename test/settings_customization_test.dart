@@ -34,13 +34,25 @@ void main() {
 
     await tester.pumpWidget(host(container, const BusinessSettingsTab()));
 
-    await tester.enterText(
-      find.byKey(const Key('businessDetailsField')),
-      'Corner Store\nMain Street 1',
-    );
-    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    Future<void> fill(String key, String text) =>
+        tester.enterText(find.byKey(Key(key)), text);
+    await fill('businessNameField', 'Corner Store');
+    await fill('businessAddressLine1Field', 'Main Street 1');
+    await fill('businessAddressLine2Field', '');
+    await fill('businessCityField', 'Springfield');
+    await fill('businessStateField', 'IL');
+    await fill('businessPostalCodeField', '62701');
+    await fill('businessPhoneField', '555-0100');
+    await fill('businessTaxIdField', 'TX-42');
+    // The business fields push the regional settings below the fold.
+    final currency = find.byType(DropdownButtonFormField<String>);
+    await tester.ensureVisible(currency);
+    await tester.pumpAndSettle();
+    await tester.tap(currency);
     await tester.pumpAndSettle();
     await tester.tap(find.text(r'USD ($)').last);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Monthly'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Monthly'));
     await tester.pumpAndSettle();
@@ -65,12 +77,15 @@ void main() {
     expect(container.read(currencyProvider).code, 'USD');
     expect(
       await container.read(receiptBusinessDetailsProvider.future),
-      'Corner Store\nMain Street 1',
+      'Corner Store\nMain Street 1\nSpringfield, IL 62701\n'
+      'Phone: 555-0100\nTax ID: TX-42',
     );
 
     final store =
         container.read(settingsStoreProvider) as InMemorySettingsStore;
     expect(store.values[AppSettings.keyCurrency], 'USD');
+    expect(store.values[BusinessDetails.keyCity], 'Springfield');
+    expect(store.values[BusinessDetails.keyTaxId], 'TX-42');
   });
 
   testWidgets('disabling a module hides it from the navigation rail', (
@@ -118,6 +133,19 @@ void main() {
     expect(container.read(appFeaturesProvider).salesEnabled, isFalse);
     expect(
       find.descendant(of: rail, matching: find.text('Sales')),
+      findsNothing,
+    );
+
+    expect(
+      find.descendant(of: rail, matching: find.text('Dashboard')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const Key('module-dashboard')));
+    await tester.pumpAndSettle();
+
+    expect(container.read(appFeaturesProvider).dashboardEnabled, isFalse);
+    expect(
+      find.descendant(of: rail, matching: find.text('Dashboard')),
       findsNothing,
     );
   });

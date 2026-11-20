@@ -1,3 +1,4 @@
+import 'package:billing_guru/core/currency/currency_provider.dart';
 import 'package:billing_guru/core/storage/product_image_storage.dart';
 import 'package:billing_guru/core/tax/tax_rate_provider.dart';
 import 'package:flutter/material.dart';
@@ -69,7 +70,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
     );
 
     _stockController = TextEditingController(
-      text: product?.stockQuantity.toString() ?? '',
+      text: product?.stockQuantity.toString() ?? '0',
     );
 
     _categoryController = TextEditingController(text: product?.category ?? '');
@@ -99,7 +100,8 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
         _barcodeController.text.trim().isEmpty &&
         _priceController.text.trim().isEmpty &&
         _costController.text.trim().isEmpty &&
-        _stockController.text.trim().isEmpty &&
+        (_stockController.text.trim().isEmpty ||
+            _stockController.text.trim() == '0') &&
         _taxController.text.trim() ==
             ref.read(defaultTaxRateProvider).toString() &&
         _imagePath == null;
@@ -187,7 +189,7 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
       _priceController.clear();
       _costController.clear();
       _taxController.text = ref.read(defaultTaxRateProvider).toString();
-      _stockController.clear();
+      _stockController.text = '0';
       _categoryController.clear();
       _shortCodeController.clear();
       setState(() {
@@ -426,10 +428,20 @@ class _ProductFormDialogState extends ConsumerState<ProductFormDialog> {
                     TextFormField(
                       controller: _priceController,
                       scrollPhysics: const NeverScrollableScrollPhysics(),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Price',
                         hintText: 'Example: 2.99',
-                        prefixIcon: Icon(Icons.euro),
+                        prefixIcon: SizedBox(
+                          width: 48,
+                          child: Center(
+                            widthFactor: 1,
+                            child: Text(
+                              ref.watch(currencyProvider).symbol,
+                              key: const Key('priceCurrencySymbol'),
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ),
+                        ),
                       ),
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,

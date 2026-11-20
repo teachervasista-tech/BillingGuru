@@ -1,5 +1,6 @@
 {
   "homeEnabled": true,
+  "dashboardEnabled": true,
   "customersEnabled": false,
   "productsEnabled": true,
   "posEnabled": true,

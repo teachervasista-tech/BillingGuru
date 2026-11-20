@@ -21,7 +21,14 @@ class BusinessSettingsTab extends ConsumerStatefulWidget {
 
 class _BusinessSettingsTabState extends ConsumerState<BusinessSettingsTab> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _details;
+  late final TextEditingController _name;
+  late final TextEditingController _addressLine1;
+  late final TextEditingController _addressLine2;
+  late final TextEditingController _city;
+  late final TextEditingController _state;
+  late final TextEditingController _postalCode;
+  late final TextEditingController _phone;
+  late final TextEditingController _taxId;
   late final TextEditingController _lowStock;
   late AppSettings _draft;
   bool _saving = false;
@@ -30,16 +37,37 @@ class _BusinessSettingsTabState extends ConsumerState<BusinessSettingsTab> {
   void initState() {
     super.initState();
     _draft = ref.read(appSettingsProvider);
-    _details = TextEditingController(text: _draft.businessDetails);
+    final business = _draft.business;
+    _name = TextEditingController(text: business.name);
+    _addressLine1 = TextEditingController(text: business.addressLine1);
+    _addressLine2 = TextEditingController(text: business.addressLine2);
+    _city = TextEditingController(text: business.city);
+    _state = TextEditingController(text: business.state);
+    _postalCode = TextEditingController(text: business.postalCode);
+    _phone = TextEditingController(text: business.phone);
+    _taxId = TextEditingController(text: business.taxId);
     _lowStock = TextEditingController(text: '${_draft.lowStockThreshold}');
   }
 
   @override
   void dispose() {
-    _details.dispose();
+    for (final controller in _businessControllers) {
+      controller.dispose();
+    }
     _lowStock.dispose();
     super.dispose();
   }
+
+  List<TextEditingController> get _businessControllers => [
+    _name,
+    _addressLine1,
+    _addressLine2,
+    _city,
+    _state,
+    _postalCode,
+    _phone,
+    _taxId,
+  ];
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -50,7 +78,16 @@ class _BusinessSettingsTabState extends ConsumerState<BusinessSettingsTab> {
           .read(appSettingsProvider.notifier)
           .save(
             _draft.copyWith(
-              businessDetails: _details.text.trim(),
+              business: BusinessDetails(
+                name: _name.text.trim(),
+                addressLine1: _addressLine1.text.trim(),
+                addressLine2: _addressLine2.text.trim(),
+                city: _city.text.trim(),
+                state: _state.text.trim(),
+                postalCode: _postalCode.text.trim(),
+                phone: _phone.text.trim(),
+                taxId: _taxId.text.trim(),
+              ),
               lowStockThreshold: int.parse(_lowStock.text.trim()),
             ),
           );
@@ -66,6 +103,24 @@ class _BusinessSettingsTabState extends ConsumerState<BusinessSettingsTab> {
     }
   }
 
+  Widget _field(
+    String key,
+    TextEditingController controller,
+    String label,
+    IconData icon, {
+    String? Function(String?)? validator,
+    TextInputType? keyboardType,
+  }) {
+    return TextFormField(
+      key: Key(key),
+      controller: controller,
+      decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
+      keyboardType: keyboardType,
+      textInputAction: TextInputAction.next,
+      validator: validator,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
@@ -79,20 +134,95 @@ class _BusinessSettingsTabState extends ConsumerState<BusinessSettingsTab> {
           SectionCard(
             title: 'Business details',
             description:
-                'Printed at the top of every receipt. The first line is used '
-                'as the business name.',
-            child: TextFormField(
-              key: const Key('businessDetailsField'),
-              controller: _details,
-              minLines: 4,
-              maxLines: 8,
-              decoration: const InputDecoration(
-                labelText: 'Receipt header',
-                alignLabelWithHint: true,
-              ),
-              validator: (value) => (value ?? '').trim().isEmpty
-                  ? 'Enter at least the business name.'
-                  : null,
+                'Printed at the top of every receipt. Leave a field empty to '
+                'keep it off the receipt.',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _field(
+                  'businessNameField',
+                  _name,
+                  'Business name',
+                  Icons.storefront_outlined,
+                  validator: (value) => (value ?? '').trim().isEmpty
+                      ? 'Enter the business name.'
+                      : null,
+                ),
+                const SizedBox(height: 12),
+                _field(
+                  'businessAddressLine1Field',
+                  _addressLine1,
+                  'Address line 1',
+                  Icons.home_outlined,
+                ),
+                const SizedBox(height: 12),
+                _field(
+                  'businessAddressLine2Field',
+                  _addressLine2,
+                  'Address line 2',
+                  Icons.home_outlined,
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 12,
+                  children: [
+                    SizedBox(
+                      width: 240,
+                      child: _field(
+                        'businessCityField',
+                        _city,
+                        'City',
+                        Icons.location_city_outlined,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 240,
+                      child: _field(
+                        'businessStateField',
+                        _state,
+                        'State',
+                        Icons.map_outlined,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 200,
+                      child: _field(
+                        'businessPostalCodeField',
+                        _postalCode,
+                        'Postal code',
+                        Icons.markunread_mailbox_outlined,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 12,
+                  children: [
+                    SizedBox(
+                      width: 240,
+                      child: _field(
+                        'businessPhoneField',
+                        _phone,
+                        'Phone',
+                        Icons.phone_outlined,
+                        keyboardType: TextInputType.phone,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 240,
+                      child: _field(
+                        'businessTaxIdField',
+                        _taxId,
+                        'Tax ID',
+                        Icons.badge_outlined,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),

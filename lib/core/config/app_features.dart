@@ -9,6 +9,7 @@ class AppFeatures {
   const AppFeatures([this.flags = const {}]);
 
   static const home = 'homeEnabled';
+  static const dashboard = 'dashboardEnabled';
   static const customers = 'customersEnabled';
   static const products = 'productsEnabled';
   static const pos = 'posEnabled';
@@ -23,6 +24,7 @@ class AppFeatures {
 
   static const allKeys = [
     home,
+    dashboard,
     customers,
     products,
     pos,
@@ -39,6 +41,7 @@ class AppFeatures {
   bool isEnabled(String key) => flags[key] ?? true;
 
   bool get homeEnabled => isEnabled(home);
+  bool get dashboardEnabled => isEnabled(dashboard);
   bool get customersEnabled => isEnabled(customers);
   bool get productsEnabled => isEnabled(products);
   bool get posEnabled => isEnabled(pos);

@@ -9,6 +9,7 @@ import 'package:billing_guru/features/checkout/data/repositories/checkout_reposi
 import 'package:billing_guru/features/checkout/domain/payment.dart';
 import 'package:billing_guru/features/checkout/domain/sale.dart';
 import 'package:billing_guru/features/sales/data/services/sales_local_service.dart';
+import 'package:billing_guru/features/settings/presentation/widgets/receipt_logo_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -240,11 +241,12 @@ void main() {
       expect(moduleRouteRedirect('/settings', features, testInstaller), isNull);
     });
 
-    test('admin: everything; seller: no settings, expenses or reports', () {
+    test('admin: everything; seller: no expenses or reports', () {
       for (final route in ['/settings', '/expenses', '/reports', '/pos']) {
         expect(moduleRouteRedirect(route, features, testAdmin), isNull);
       }
-      for (final route in ['/settings', '/expenses', '/reports']) {
+      expect(moduleRouteRedirect('/settings', features, testSeller), isNull);
+      for (final route in ['/expenses', '/reports']) {
         expect(
           moduleRouteRedirect(route, features, testSeller),
           '/home',
@@ -268,8 +270,15 @@ void main() {
       expect(testInstaller.can(Permission.manageTax), isTrue);
       expect(testAdmin.can(Permission.manageUsers), isTrue);
       expect(testAdmin.can(Permission.manageCategories), isTrue);
-      expect(testSeller.can(Permission.openSettings), isFalse);
-      expect(testSeller.role.permissions, [Permission.operate]);
+      expect(testSeller.can(Permission.openSettings), isTrue);
+      expect(testSeller.role.permissions, [
+        Permission.openSettings,
+        Permission.configureReceipt,
+        Permission.operate,
+      ]);
+      for (final user in [testInstaller, testAdmin, testSeller]) {
+        expect(user.can(Permission.configureReceipt), isTrue);
+      }
     });
   });
 
@@ -356,6 +365,12 @@ void main() {
     expect(tab('Tax'), findsOneWidget);
     expect(tab('Product categories'), findsOneWidget);
     expect(tab('Business'), findsNothing);
+    // Admin: Printer tab with the receipt template only, no logo.
+    expect(tab('Printer'), findsOneWidget);
+    await tester.tap(tab('Printer'));
+    await tester.pumpAndSettle();
+    expect(find.text('Bill receipt template'), findsOneWidget);
+    expect(find.byType(ReceiptLogoCard), findsNothing);
     // Admin can back up, but not restore or move the backup folder.
     expect(tab('Data'), findsOneWidget);
     await tester.tap(tab('Data'));
@@ -364,12 +379,22 @@ void main() {
     expect(find.text('Restore from backup'), findsNothing);
     expect(find.text('Choose backup folder'), findsNothing);
 
-    // Seller: no Settings at all.
+    // Seller: Settings with only the Printer tab's receipt template.
     container.read(authProvider.notifier).logout();
     await tester.pumpAndSettle();
     await signIn('sam', 'seller1');
     final rail = find.byType(NavigationRail);
-    for (final hidden in ['Settings', 'Expenses', 'Reports']) {
+    await tester.tap(
+      find.descendant(of: rail, matching: find.text('Settings')),
+    );
+    await tester.pumpAndSettle();
+    expect(tab('Printer'), findsOneWidget);
+    for (final hiddenTab in ['Business', 'Tax', 'Data', 'Users', 'Modules']) {
+      expect(tab(hiddenTab), findsNothing, reason: hiddenTab);
+    }
+    expect(find.text('Bill receipt template'), findsOneWidget);
+    expect(find.byType(ReceiptLogoCard), findsNothing);
+    for (final hidden in ['Expenses', 'Reports']) {
       expect(
         find.descendant(of: rail, matching: find.text(hidden)),
         findsNothing,

@@ -86,6 +86,7 @@ final List<AppModule> appModules = [
   ),
   AppModule(
     id: 'dashboard',
+    featureKey: AppFeatures.dashboard,
     permission: Permission.operate,
     label: 'Dashboard',
     route: '/dashboard',

@@ -90,4 +90,49 @@ void main() {
     expect(find.textContaining('Subtotal'), findsOneWidget);
     expect(find.textContaining('TOTAL'), findsOneWidget);
   });
+
+  testWidgets('toggling the Payment screen keeps the Modules tab selected', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(1600, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final container = await createTestContainer(user: testInstaller);
+    addTearDown(container.dispose);
+    await container.read(defaultTaxRateProvider.notifier).loadSavedTaxRate();
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: SettingsScreen()),
+      ),
+    );
+    await tester.tap(find.text('Modules'));
+    await tester.pumpAndSettle();
+
+    int selectedIndex() =>
+        tester.widget<TabBar>(find.byType(TabBar)).controller!.index;
+    String selectedLabel() {
+      final tabs = tester.widget<TabBar>(find.byType(TabBar)).tabs;
+      return (tabs[selectedIndex()] as Tab).text!;
+    }
+
+    expect(selectedLabel(), 'Modules');
+    final paymentOptionsShown = find
+        .text('Payment options')
+        .evaluate()
+        .isNotEmpty;
+
+    for (var i = 0; i < 2; i++) {
+      await tester.tap(find.byKey(const Key('feature-checkout')));
+      await tester.pumpAndSettle();
+      expect(selectedLabel(), 'Modules');
+      expect(find.byKey(const Key('feature-checkout')), findsOneWidget);
+    }
+    expect(
+      find.text('Payment options').evaluate().isNotEmpty,
+      paymentOptionsShown,
+    );
+  });
 }

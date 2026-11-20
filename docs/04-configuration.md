@@ -12,7 +12,7 @@ Complete guide to configuring BillingGuru for your specific needs.
 
 Configuration files are stored in the `assets/config/` directory and loaded at application startup.
 
-`features.json` also accepts `"expensesEnabled"` (2.0.0).
+`features.json` also accepts `"expensesEnabled"` (2.0.0) and `"dashboardEnabled"` (switches the Dashboard module on/off, like Home and PoS).
 
 ### 1. Feature Flags (features.json)
 
