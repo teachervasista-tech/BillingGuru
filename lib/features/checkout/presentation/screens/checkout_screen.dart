@@ -13,7 +13,6 @@ import 'package:intl/intl.dart';
 
 import '../../../../app/widgets/copyright_banner.dart';
 import '../../../cart/presentation/view_models/cart_view_model.dart';
-import '../../domain/payment.dart';
 import '../../domain/payment_option.dart';
 import '../../domain/sale.dart';
 import '../providers/payment_options_provider.dart';
@@ -59,13 +58,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
   }
 
-  Future<void> _printReceipt(PaymentOption? option) async {
+  /// Saves the sale, shows the receipt to print, then finishes exactly like
+  /// [_pay] (clears the cart and returns to the PoS). The sale saved here is
+  /// reused by [_pay], so no duplicate invoice is recorded.
+  Future<void> _printReceipt(PaymentOption option) async {
     final cart = ref.read(cartProvider);
     final Sale sale;
     try {
       sale = await ref
           .read(checkoutViewModelProvider.notifier)
-          .recordSale(cart, option?.method ?? PaymentMethod.cash);
+          .recordSale(cart, option.method);
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -88,6 +90,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       businessDetails: details,
       logo: logo,
     );
+
+    if (!mounted) return;
+    await _pay(option);
   }
 
   @override
@@ -224,15 +229,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.payments_outlined),
-                    label: const Text('Pay'),
+                    label: const Text('Pay without receipt'),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
-                    onPressed: cart.isEmpty
+                    onPressed:
+                        cart.isEmpty ||
+                            checkoutState.isSaving ||
+                            selectedOption == null
                         ? null
                         : () => _printReceipt(selectedOption),
                     icon: const Icon(Icons.print_outlined),
-                    label: const Text('Print receipt'),
+                    label: const Text('Pay and print receipt'),
                   ),
                   if (checkoutState.errorMessage != null) ...[
                     const SizedBox(height: 16),

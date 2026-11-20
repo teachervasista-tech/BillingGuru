@@ -106,11 +106,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         _TaxAndCurrencyTab(),
         Permission.manageTax,
       ),
+      // Everyone; the logo card inside is installer only.
       const SettingsTab(
         'Printer',
         Icons.receipt_long_outlined,
         _PrinterSettingsTab(),
-        system,
+        Permission.configureReceipt,
       ),
       if (features.checkoutEnabled)
         const SettingsTab(
@@ -594,12 +595,17 @@ class _PrinterSettingsTabState extends ConsumerState<_PrinterSettingsTab> {
     final currency = ref.watch(currencyProvider);
     final taxRate = ref.watch(defaultTaxRateProvider);
     final businessDetailsAsync = ref.watch(receiptBusinessDetailsProvider);
+    final canConfigureSystem =
+        ref.watch(currentUserProvider)?.can(Permission.configureSystem) ??
+        false;
 
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        const ReceiptLogoCard(),
-        const SizedBox(height: 16),
+        if (canConfigureSystem) ...[
+          const ReceiptLogoCard(),
+          const SizedBox(height: 16),
+        ],
         Card(
           child: Padding(
             padding: const EdgeInsets.all(20),
